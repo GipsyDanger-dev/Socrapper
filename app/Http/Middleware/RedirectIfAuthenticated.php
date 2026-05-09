@@ -2,14 +2,13 @@
 
 namespace App\Http\Middleware;
 
-use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
+use Closure;
+use Illuminate\Http\Request;
 
-class RedirectIfAuthenticated extends RedirectIfAuthenticated
+class RedirectIfAuthenticated
 {
-    protected function redirectTo($request)
+    public function handle(Request $request, Closure $next)
     {
-        if (auth()->check()) {
-            return route('dashboard');
-        }
+        return $next($request);
     }
 }
