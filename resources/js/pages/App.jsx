@@ -11,9 +11,14 @@ export default function App() {
     const [data, setData] = useState([]);
     const [analysis, setAnalysis] = useState(null);
     const [statistics, setStatistics] = useState(null);
+    const [currentPlatform, setCurrentPlatform] = useState('');
+    const [currentKeyword, setCurrentKeyword] = useState('');
 
     const handleScrape = async (platform, keyword, limit) => {
         setLoading(true);
+        setCurrentPlatform(platform);
+        setCurrentKeyword(keyword);
+        
         try {
             const response = await fetch('/api/scrape', {
                 method: 'POST',
@@ -25,6 +30,7 @@ export default function App() {
                     platform,
                     keyword,
                     limit,
+                    method: 'webscrape', // Use web scraping by default
                 }),
             });
 
@@ -67,9 +73,9 @@ export default function App() {
     const calculateStatistics = (dataItems) => {
         if (!dataItems || dataItems.length === 0) return;
 
-        const totalLikes = dataItems.reduce((sum, item) => sum + item.likes, 0);
-        const totalComments = dataItems.reduce((sum, item) => sum + item.comments, 0);
-        const totalShares = dataItems.reduce((sum, item) => sum + item.shares, 0);
+        const totalLikes = dataItems.reduce((sum, item) => sum + (item.likes || 0), 0);
+        const totalComments = dataItems.reduce((sum, item) => sum + (item.comments || 0), 0);
+        const totalShares = dataItems.reduce((sum, item) => sum + (item.shares || 0), 0);
 
         setStatistics({
             total: dataItems.length,
@@ -82,6 +88,55 @@ export default function App() {
         });
     };
 
+    const handleExportData = async (type) => {
+        try {
+            setLoading(true);
+            
+            let exportData = {};
+            if (type === 'scraping') {
+                exportData = data;
+            } else if (type === 'analysis') {
+                exportData = { data, analysis };
+            } else if (type === 'statistics') {
+                exportData = statistics;
+            }
+
+            const response = await fetch('/api/export', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    data: exportData,
+                    type: type,
+                    filename: `${type}_${currentKeyword}_${new Date().toISOString().slice(0, 10)}.csv`,
+                }),
+            });
+
+            if (response.ok) {
+                // Download file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${type}_${currentKeyword}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                alert('✅ File berhasil didownload!');
+            } else {
+                alert('❌ Error: Gagal export file');
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            alert('Terjadi kesalahan saat export');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="app">
             <LoadingIndicator show={loading} />
@@ -89,7 +144,7 @@ export default function App() {
             <header className="header">
                 <div className="header-content">
                     <h1><i className="fas fa-globe"></i> Socrapper</h1>
-                    <p>Social Media Sentiment Analysis Tool</p>
+                    <p>Social Media Sentiment Analysis Tool (Web Scraping)</p>
                 </div>
             </header>
 
@@ -118,6 +173,36 @@ export default function App() {
                                 Statistik
                             </button>
                         </div>
+
+                        {data.length > 0 && (
+                            <div className="export-buttons">
+                                <button 
+                                    className="btn-export" 
+                                    onClick={() => handleExportData('scraping')}
+                                    title="Export raw data to CSV"
+                                >
+                                    📥 Export Raw Data
+                                </button>
+                                {analysis && (
+                                    <button 
+                                        className="btn-export" 
+                                        onClick={() => handleExportData('analysis')}
+                                        title="Export sentiment analysis to CSV"
+                                    >
+                                        📥 Export Sentiment
+                                    </button>
+                                )}
+                                {statistics && (
+                                    <button 
+                                        className="btn-export" 
+                                        onClick={() => handleExportData('statistics')}
+                                        title="Export statistics to CSV"
+                                    >
+                                        📥 Export Statistics
+                                    </button>
+                                )}
+                            </div>
+                        )}
 
                         {activeTab === 'raw-data' && <RawDataTab data={data} />}
                         {activeTab === 'sentiment' && <SentimentTab analysis={analysis} />}

@@ -2,14 +2,34 @@
 
 namespace App\Services;
 
-use Carbon\Carbon;
+use App\Services\Platforms\TwitterAPI;
+use App\Services\Platforms\InstagramAPI;
+use App\Services\Platforms\TikTokAPI;
+use App\Services\Platforms\FacebookAPI;
+use App\Services\Platforms\RedditAPI;
+use App\Services\Platforms\YouTubeAPI;
+use Illuminate\Support\Facades\Log;
 
 class ScraperService
 {
     protected $supportedPlatforms = ['twitter', 'instagram', 'tiktok', 'facebook', 'reddit', 'youtube'];
+    protected $platformApis = [];
+
+    public function __construct()
+    {
+        // Initialize platform APIs
+        $this->platformApis = [
+            'twitter' => new TwitterAPI(),
+            'instagram' => new InstagramAPI(),
+            'tiktok' => new TikTokAPI(),
+            'facebook' => new FacebookAPI(),
+            'reddit' => new RedditAPI(),
+            'youtube' => new YouTubeAPI(),
+        ];
+    }
 
     /**
-     * Scrape data dari platform
+     * Scrape data dari platform menggunakan API asli
      */
     public function scrape(string $platform, string $keyword, int $limit = 100): array
     {
@@ -17,31 +37,13 @@ class ScraperService
             throw new \Exception("Platform tidak didukung: {$platform}");
         }
 
-        // TODO: Implementasi actual scraping menggunakan:
-        // - TwitterAPI untuk Twitter
-        // - Instagram API untuk Instagram
-        // - TikTok API untuk TikTok
-        // - Facebook Graph API untuk Facebook
-        // - PRAW untuk Reddit
-        // - YouTube API untuk YouTube
-
-        // Dummy data untuk testing
-        $dummyData = [];
-        for ($i = 1; $i <= min($limit, 10); $i++) {
-            $dummyData[] = [
-                'id' => $i,
-                'platform' => $platform,
-                'author' => "User {$i}",
-                'text' => "Postingan {$i} tentang {$keyword}",
-                'timestamp' => Carbon::now()->subMinutes(rand(1, 1440))->toIso8601String(),
-                'likes' => $i * 10,
-                'comments' => $i * 5,
-                'shares' => $i * 2,
-                'url' => "https://{$platform}.com/post/{$i}",
-            ];
+        try {
+            $api = $this->platformApis[$platform];
+            return $api->scrape($keyword, $limit);
+        } catch (\Exception $e) {
+            Log::error("Scraping error for {$platform}: " . $e->getMessage());
+            return [];
         }
-
-        return $dummyData;
     }
 
     /**
