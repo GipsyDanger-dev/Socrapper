@@ -1,4 +1,8 @@
 import React from 'react';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function SentimentTab({ analysis }) {
     if (!analysis) {
@@ -34,8 +38,37 @@ export default function SentimentTab({ analysis }) {
         return labels[sentiment] || 'Tidak Diketahui';
     };
 
+    const chartData = {
+        labels: ['Positif', 'Netral', 'Negatif'],
+        datasets: [{
+            data: [analysis.positive, analysis.neutral, analysis.negative],
+            backgroundColor: ['#10b981', '#6b7280', '#ef4444'],
+            borderWidth: 2,
+            borderColor: '#fff',
+        }],
+    };
+
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => {
+                        const key = ctx.label === 'Positif' ? 'positive' : ctx.label === 'Negatif' ? 'negative' : 'neutral';
+                        return `${ctx.label}: ${ctx.raw} (${analysis.percentage[key]}%)`;
+                    }
+                }
+            }
+        }
+    };
+
     return (
         <div id="sentiment" className="tab-content active">
+            <div className="chart-container">
+                <Doughnut data={chartData} options={chartOptions} />
+            </div>
+
             <div className="sentiment-summary">
                 <div className="sentiment-stat">
                     <div className="stat-value positive">{analysis.positive}</div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\ScrapeHistory;
 use App\Services\ScraperService;
 use App\Services\SentimentAnalysisService;
 use App\Services\WebScraperService;
@@ -55,6 +56,29 @@ class ScraperController extends Controller
                     $validated['keyword'],
                     $validated['limit']
                 );
+            }
+
+            // Simpan ke history
+            try {
+                $sentimentResult = $this->sentimentService->analyzeSentiments(
+                    array_column($results, 'text')
+                );
+
+                ScrapeHistory::create([
+                    'platform' => $validated['platform'],
+                    'keyword' => $validated['keyword'],
+                    'limit' => $validated['limit'],
+                    'results_count' => count($results),
+                    'sentiment_summary' => [
+                        'positive' => $sentimentResult['positive'],
+                        'negative' => $sentimentResult['negative'],
+                        'neutral' => $sentimentResult['neutral'],
+                        'percentage' => $sentimentResult['percentage'],
+                    ],
+                    'raw_data' => $results,
+                ]);
+            } catch (\Exception $e) {
+                Log::warning("Failed to save history: " . $e->getMessage());
             }
 
             return response()->json([
@@ -262,22 +286,27 @@ class ScraperController extends Controller
     }
 
     /**
-     * Dapatkan history scraping (future implementation)
+     * Dapatkan history scraping
      */
     public function getHistory()
     {
-        // TODO: Implementasi dengan database
+        $history = ScrapeHistory::orderBy('created_at', 'desc')
+            ->paginate(15);
+
         return response()->json([
-            'history' => [],
+            'success' => true,
+            'history' => $history,
         ]);
     }
 
     /**
-     * Hapus history scraping (future implementation)
+     * Hapus history scraping
      */
     public function deleteHistory($id)
     {
-        // TODO: Implementasi dengan database
+        $item = ScrapeHistory::findOrFail($id);
+        $item->delete();
+
         return response()->json([
             'success' => true,
             'message' => 'History deleted',
