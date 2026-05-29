@@ -46,10 +46,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'socrapper.wsgi.application'
 
-# Database - SQLite for local, MySQL for cloud
+# Database
 DB_ENGINE = os.getenv('DB_ENGINE', 'sqlite')
 
-if DB_ENGINE == 'mysql':
+if DB_ENGINE == 'postgresql':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_DATABASE', 'postgres'),
+            'USER': os.getenv('DB_USERNAME', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
+elif DB_ENGINE == 'mysql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
