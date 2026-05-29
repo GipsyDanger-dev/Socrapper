@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import InputSection from '../components/InputSection';
 import RawDataTab from '../components/RawDataTab';
 import SentimentTab from '../components/SentimentTab';
 import StatisticsTab from '../components/StatisticsTab';
+import HistoryTab from '../components/HistoryTab';
 import LoadingIndicator from '../components/LoadingIndicator';
 
 export default function App() {
@@ -13,6 +14,38 @@ export default function App() {
     const [statistics, setStatistics] = useState(null);
     const [currentPlatform, setCurrentPlatform] = useState('');
     const [currentKeyword, setCurrentKeyword] = useState('');
+    const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+
+    const handleLoadHistory = async (item) => {
+        if (item.raw_data && item.raw_data.length > 0) {
+            setLoading(true);
+            try {
+                setData(item.raw_data);
+
+                const analysisResponse = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ texts: item.raw_data.map(d => d.text) }),
+                });
+                const analysisResult = await analysisResponse.json();
+                if (analysisResult.success) {
+                    setAnalysis(analysisResult.analysis);
+                }
+
+                calculateStatistics(item.raw_data);
+                setCurrentPlatform(item.platform);
+                setCurrentKeyword(item.keyword);
+                setActiveTab('raw-data');
+            } catch (error) {
+                console.error('Error loading history:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
 
     const handleScrape = async (platform, keyword, limit) => {
         setLoading(true);
@@ -172,6 +205,12 @@ export default function App() {
                             >
                                 Statistik
                             </button>
+                            <button
+                                className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('history')}
+                            >
+                                History
+                            </button>
                         </div>
 
                         {data.length > 0 && (
@@ -207,6 +246,13 @@ export default function App() {
                         {activeTab === 'raw-data' && <RawDataTab data={data} />}
                         {activeTab === 'sentiment' && <SentimentTab analysis={analysis} />}
                         {activeTab === 'statistics' && <StatisticsTab statistics={statistics} />}
+                        {activeTab === 'history' && (
+                            <HistoryTab
+                                key={historyRefreshKey}
+                                onLoadHistory={handleLoadHistory}
+                                onRefresh={() => setHistoryRefreshKey(k => k + 1)}
+                            />
+                        )}
                     </section>
                 </div>
             </main>
