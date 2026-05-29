@@ -1,7 +1,7 @@
 {
   "name": "socrapper",
-  "description": "Social Media Sentiment Scraper with Laravel & React",
-  "version": "1.0.0",
+  "description": "Social Media Sentiment Scraper with Django & React",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,8 +11,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",
-    "axios": "^1.4.0",
-    "laravel-vite-plugin": "^0.7.0",
     "vite": "^4.3.4"
   },
   "dependencies": {
