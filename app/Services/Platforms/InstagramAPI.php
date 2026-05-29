@@ -15,8 +15,8 @@ class InstagramAPI extends BasePlatformAPI
     public function __construct()
     {
         parent::__construct();
-        $this->accessToken = env('INSTAGRAM_ACCESS_TOKEN');
-        $this->businessAccountId = env('INSTAGRAM_BUSINESS_ACCOUNT_ID');
+        $this->accessToken = config('services.instagram.access_token');
+        $this->businessAccountId = config('services.instagram.business_account_id');
         
         if (!$this->accessToken) {
             Log::warning('Instagram Access Token not configured');

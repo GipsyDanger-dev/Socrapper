@@ -14,7 +14,7 @@ class YouTubeAPI extends BasePlatformAPI
     public function __construct()
     {
         parent::__construct();
-        $this->apiKey = env('YOUTUBE_API_KEY');
+        $this->apiKey = config('services.youtube.api_key');
         
         if (!$this->apiKey) {
             Log::warning('YouTube API Key not configured');

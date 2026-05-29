@@ -15,8 +15,8 @@ class FacebookAPI extends BasePlatformAPI
     public function __construct()
     {
         parent::__construct();
-        $this->accessToken = env('FACEBOOK_ACCESS_TOKEN');
-        $this->pageId = env('FACEBOOK_PAGE_ID');
+        $this->accessToken = config('services.facebook.access_token');
+        $this->pageId = config('services.facebook.page_id');
         
         if (!$this->accessToken) {
             Log::warning('Facebook Access Token not configured');

@@ -16,9 +16,9 @@ class TikTokAPI extends BasePlatformAPI
     public function __construct()
     {
         parent::__construct();
-        $this->clientKey = env('TIKTOK_CLIENT_KEY');
-        $this->clientSecret = env('TIKTOK_CLIENT_SECRET');
-        $this->accessToken = env('TIKTOK_ACCESS_TOKEN');
+        $this->clientKey = config('services.tiktok.client_key');
+        $this->clientSecret = config('services.tiktok.client_secret');
+        $this->accessToken = config('services.tiktok.access_token');
         
         if (!$this->clientKey) {
             Log::warning('TikTok credentials not configured');

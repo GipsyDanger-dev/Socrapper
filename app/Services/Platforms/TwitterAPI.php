@@ -14,7 +14,7 @@ class TwitterAPI extends BasePlatformAPI
     public function __construct()
     {
         parent::__construct();
-        $this->bearerToken = env('TWITTER_BEARER_TOKEN');
+        $this->bearerToken = config('services.twitter.bearer_token');
         
         if (!$this->bearerToken) {
             Log::warning('Twitter Bearer Token not configured');
