@@ -13,6 +13,7 @@ DEBUG = os.getenv('APP_DEBUG', 'True').lower() in ('true', '1', 'yes')
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
+    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.staticfiles',
     'rest_framework',
@@ -76,7 +77,10 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES': [],
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
+    'UNAUTHENTICATED_USER': None,
 }
 
 # LLM Configuration
