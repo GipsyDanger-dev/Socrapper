@@ -1,597 +1,336 @@
-# Socrapper - Social Media Sentiment Scraper
+# Socrapper - General Internet Sentiment Scraper
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
 ![Status](https://img.shields.io/badge/status-production%20ready-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Website scraping dan analisis sentimen dari berbagai platform media sosial menggunakan **Laravel 10** dan **React 18 JS** dengan **Real API Integration**.
+Web scraping dan analisis sentimen dari internet secara general menggunakan **Django 4.2** + **Scrapling** dan **React 18** frontend.
 
-**A modern full-stack application for scraping and analyzing social media sentiment across 6 platforms with real API integration.**
+Scrape keseluruhan internet — bukan hanya beberapa platform. User bisa filter platform tertentu atau biarkan scraper mencari di seluruh web.
 
-## 🌟 Features
+## Features
 
-### ✅ Real API Integration (v1.1.0)
-- **Twitter API v2** - Real-time tweet search with public metrics
-- **Instagram Graph API** - Business account media and engagement
-- **TikTok API** - Video search and creator analytics
-- **Facebook Graph API** - Page posts and engagement data
-- **Reddit API** - Post search and subreddit data
-- **YouTube Data API v3** - Video search and statistics
+### General Internet Scraping
+- **Scrapling** engine dengan anti-bot bypass (StealthyFetcher)
+- Scrape URL apapun di internet, bukan hanya platform tertentu
+- 9 platform selector opsional: Twitter, Reddit, News, StackOverflow, GitHub, YouTube, Instagram, TikTok, Facebook
+- Fallback ke Google Search umum jika tidak ada platform dipilih
 
-### 📊 Sentiment Analysis
-- Keyword-based sentiment detection (Positive/Negative/Neutral)
-- Confidence scoring for each classification
-- Multi-language support (Indonesian/English)
-- Aggregated sentiment statistics
+### Sentiment Analysis
+- Keyword-based dengan **negation handling** (window 3 kata)
+- 16 positive + 18 negative keywords (Indonesian + English)
+- Multi-word phrase matching
+- Contoh: "tidak bagus" → **negative** (bukan positive)
 
-### 📈 Analytics Dashboard
-- Real-time engagement metrics
-- Platform-specific statistics
-- Comparative analysis across platforms
-- Responsive UI design
+### Internet Surfer
+- **Quick Surf**: Pencarian cepat tanpa extract content
+- **Full Surf**: Search + extract + analisis sentimen
+- **Deep Surf**: Multiple queries + full extraction + detailed analysis
+- **AI Analyze**: LLM-powered analysis (OpenAI-compatible API)
 
-### 🔄 Automatic Fallback
-- Graceful fallback to realistic simulated data when APIs unavailable
-- Perfect for development and testing
-- Maintains consistent data structure
+### Analytics Dashboard
+- Doughnut chart sentimen (Chart.js)
+- Bar charts engagement statistics
+- History scraping dengan pagination
+- Export data ke CSV
 
-## 📁 Struktur Folder
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Django 4.2 + Django REST Framework |
+| Scraping | Scrapling (StealthyFetcher + Fetcher) |
+| Database | Supabase PostgreSQL (or SQLite for dev) |
+| Frontend | React 18 + Vite 4 |
+| Charts | Chart.js + react-chartjs-2 |
+| LLM | OpenAI-compatible API (mimo-v2.5-pro) |
+
+## Project Structure
 
 ```
 Socrapper/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   └── ScraperController.php      # API endpoints
-│   │   └── Middleware/                    # HTTP middleware
-│   └── Services/
-│       ├── ScraperService.php             # Main orchestrator
-│       ├── SentimentAnalysisService.php   # Sentiment detection
-│       └── Platforms/                     # Platform-specific APIs ⭐ NEW
-│           ├── BasePlatformAPI.php        # Abstract base class
-│           ├── TwitterAPI.php
-│           ├── InstagramAPI.php
-│           ├── TikTokAPI.php
-│           ├── FacebookAPI.php
-│           ├── RedditAPI.php
-│           └── YouTubeAPI.php
-├── routes/
-│   ├── api.php               # API Routes
-│   └── web.php               # Web Routes
-├── resources/
-│   ├── views/
-│   │   └── app.blade.php     # Blade template untuk React
-│   ├── js/
-│   │   ├── app.jsx           # React entry point
-│   │   ├── pages/
-│   │   │   └── App.jsx       # Main React component
-│   │   ├── components/       # React components
-│   │   │   ├── InputSection.jsx
-│   │   │   ├── RawDataTab.jsx
-│   │   │   ├── SentimentTab.jsx
-│   │   │   ├── StatisticsTab.jsx
-│   │   │   └── LoadingIndicator.jsx
-│   │   └── css/
-│   │       └── app.css       # Styling
-│   └── views/
-│       └── app.blade.php
-├── public/
-│   ├── build/                # Compiled assets
-│   └── index.php             # Entry point
-├── config/
-│   ├── app.php
-│   ├── database.php
-│   ├── auth.php
-│   ├── session.php
-│   ├── cache.php
-│   └── view.php
-├── storage/
-│   └── logs/                 # Application logs
-├── bootstrap/
-│   ├── app.php
-│   └── cache/
-├── composer.json             # PHP dependencies
-├── package.json              # Node dependencies
-├── vite.config.js            # Vite configuration
-├── .env.example              # Environment variables example
-├── API_SETUP.md              # 📖 API setup guide (NEW)
-├── TESTING_GUIDE.md          # 📖 Testing guide (NEW)
-├── DEVELOPER_GUIDE.md        # 📖 Developer guide (NEW)
-├── REAL_API_CHANGELOG.md     # 📖 Changelog (NEW)
-└── README.md
+├── manage.py                      # Django CLI
+├── requirements.txt               # Python dependencies
+├── package.json                   # Node dependencies
+├── vite.config.js                 # Vite → proxy ke Django:8000
+├── index.html                     # React SPA entry
+├── .env                           # Environment config
+│
+├── socrapper/                     # Django project config
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+│
+├── scraper/                       # App: scraping
+│   ├── models.py                  # ScrapeHistory model
+│   ├── views.py                   # 9 API endpoints
+│   ├── urls.py
+│   └── services/
+│       ├── sentiment_service.py   # Keyword + negation
+│       ├── csv_export_service.py  # CSV export
+│       └── web_scraper_service.py # Scrapling engine
+│
+├── surfer/                        # App: internet surfer
+│   ├── views.py                   # 5 API endpoints
+│   ├── urls.py
+│   └── services/
+│       ├── search_engine_service.py      # Google News + Web
+│       ├── content_extractor_service.py  # Article extraction
+│       ├── llm_analysis_service.py       # LLM integration
+│       └── internet_surfer_service.py    # Orchestrator
+│
+└── resources/js/                  # React frontend
+    ├── app.jsx
+    ├── pages/App.jsx
+    └── components/
+        ├── InputSection.jsx
+        ├── RawDataTab.jsx
+        ├── SentimentTab.jsx
+        ├── StatisticsTab.jsx
+        ├── HistoryTab.jsx
+        └── LoadingIndicator.jsx
 ```
 
-## 🚀 Fitur Utama
+## Requirements
 
-- **Multi-Platform Scraping**: Twitter/X, Instagram, TikTok, Facebook, Reddit, YouTube dengan Real API Integration
-- **Real API Integration** ⭐ NEW: Implementasi lengkap 6 platform API dengan fallback data otomatis
-- **Sentiment Analysis**: Analisis sentimen otomatis (Positif/Negatif/Netral) dengan confidence score
-- **Real-time Statistics**: Engagement metrics (likes, comments, shares) per platform
-- **Modern UI**: React 18 JS dengan Vite build tool dan styling responsif
-- **RESTful API**: Backend Laravel 10 dengan endpoints yang clean dan terstruktur
-- **Graceful Fallback**: Realistic simulated data ketika API key tidak dikonfigurasi (perfect for development)
-- **Comprehensive Documentation**: 4 panduan lengkap (API Setup, Testing, Developer, Changelog)
-
-## 📋 Requirements
-
-- PHP 8.1+
+- Python 3.10+
 - Node.js 16+ dan npm
-- Composer
-- MySQL (optional, untuk production) atau SQLite (default)
 - Modern browser (Chrome, Firefox, Safari, Edge)
 
-## 🔧 Instalasi & Setup
+## Installation
 
-### 1. Setup Backend (Laravel)
+### 1. Clone repository
+
 ```bash
-# Navigate to project directory
-cd d:\Advanced\xamp\htdocs\Socrapper
-
-# Install PHP dependencies
-composer install
-
-# Generate application key (if not already generated)
-php artisan key:generate
+git clone https://github.com/GipsyDanger-dev/Socrapper.git
+cd Socrapper
 ```
 
-### 2. Setup Frontend (React + Node)
+### 2. Setup Python backend
+
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Copy dan edit environment config
+cp .env.example .env  # atau buat .env manual (lihat Environment Variables)
+
+# Jalankan database migrations
+python manage.py migrate
+```
+
+### 3. Setup React frontend
+
 ```bash
 # Install Node dependencies
 npm install
-
-# Build assets untuk production
-npm run build
-
-# Atau untuk development dengan hot reload
-npm run dev
 ```
 
-### 3. Jalankan Aplikasi
+### 4. Jalankan aplikasi
 
-**Best Practice: Start Both Servers**
-
-Terminal 1 - Laravel Backend:
+**Terminal 1 — Django backend:**
 ```bash
-php artisan serve
+python manage.py runserver 8000
 ```
-Runs on: `http://localhost:8000`
 
-Terminal 2 - Frontend Development (optional for dev):
+**Terminal 2 — Vite dev server:**
 ```bash
 npm run dev
 ```
-Runs on: `http://localhost:5173` (but loads from Laravel)
 
-**Access Application:**
-```
-http://localhost:8000
-```
+Buka **http://localhost:5173** di browser.
 
-## 📚 Documentation
+## Environment Variables
 
-### 📖 Main Guides
+Buat file `.env` di root project:
 
-| Guide | Purpose |
-|-------|---------|
-| [**API_SETUP.md**](API_SETUP.md) | Configure real API credentials untuk setiap platform |
-| [**TESTING_GUIDE.md**](TESTING_GUIDE.md) | How to test all features tanpa API keys atau dengan real credentials |
-| [**DEVELOPER_GUIDE.md**](DEVELOPER_GUIDE.md) | Architecture & how to add new platforms |
-| [**REAL_API_CHANGELOG.md**](REAL_API_CHANGELOG.md) | Implementation details & v1.1.0 updates |
+```env
+# Database: sqlite / mysql / postgresql
+DB_ENGINE=sqlite
 
-**Baca dokumentasi ini setelah instalasi!**
+# Untuk PostgreSQL (Supabase)
+# DB_ENGINE=postgresql
+# DB_HOST=db.xxxxx.supabase.co
+# DB_PORT=5432
+# DB_DATABASE=postgres
+# DB_USERNAME=postgres
+# DB_PASSWORD=your-password
 
-## 🎯 Quick Start Usage
+# LLM Configuration (opsional, untuk AI analysis)
+LLM_API_KEY=your-api-key
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4o-mini
 
-### Test Without API Keys (Fallback Mode) ✅
-```
-1. Buka http://localhost:8000
-2. Pilih platform (Twitter, Instagram, TikTok, Facebook, Reddit, atau YouTube)
-3. Masukkan keyword (contoh: "React", "Laravel", "Technology")
-4. Klik "Mulai Scraping"
-5. Lihat hasil di tab Raw Data, Sentiment, Statistics
-
-Result: 10 realistic simulated posts appear instantly
-Fallback data marked with "[Fallback Data]"
-Perfect untuk testing dan development
+# Django
+SECRET_KEY=your-secret-key-here
+DEBUG=True
 ```
 
-### Test With Real API Data 🔌
-```
-1. Follow API_SETUP.md untuk setiap platform
-2. Add credentials ke .env file
-3. Run: php artisan cache:clear && php artisan config:clear
-4. Reload http://localhost:8000
-5. Results sekarang show REAL data dari platforms!
-```
+### Database Options
 
-**See [TESTING_GUIDE.md](TESTING_GUIDE.md) for comprehensive testing examples**
+| Engine | Config |
+|--------|--------|
+| SQLite (default) | `DB_ENGINE=sqlite` — zero config, file-based |
+| PostgreSQL | `DB_ENGINE=postgresql` + host/port/user/pass |
+| MySQL | `DB_ENGINE=mysql` + host/port/user/pass |
 
-## 📚 API Endpoints
+### LLM Configuration (Optional)
 
-### GET `/api/platforms`
-Mengembalikan daftar platform yang didukung
-```json
-{
-  "platforms": {
-    "twitter": "Twitter/X",
-    "instagram": "Instagram",
-    "tiktok": "TikTok",
-    "facebook": "Facebook",
-    "reddit": "Reddit",
-    "youtube": "YouTube"
-  }
-}
-```
+LLM digunakan untuk fitur **AI Analyze** di Internet Surfer. Tanpa LLM, fitur ini tetap jalan dengan fallback keyword-based analysis.
 
-### GET `/api/platforms`
-Mengembalikan daftar platform yang didukung
-```json
-{
-  "platforms": [
-    "twitter",
-    "instagram", 
-    "tiktok",
-    "facebook",
-    "reddit",
-    "youtube"
-  ]
-}
-```
+Supported API:
+- OpenAI API (`https://api.openai.com/v1`)
+- Any OpenAI-compatible API (LocalAI, Ollama, etc)
 
-### POST `/api/scrape`
-Memulai proses scraping dari platform pilihan
+## API Endpoints
 
-**Request:**
-```json
-{
-  "platform": "twitter",
-  "keyword": "Laravel",
-  "limit": 50
-}
-```
+### Scraper
 
-**Response (with or without API keys):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "twit_1",
-      "platform": "twitter",
-      "author": "John Doe",
-      "text": "Laravel is amazing!",
-      "timestamp": "2026-05-09T10:30:00Z",
-      "likes": 100,
-      "comments": 25,
-      "shares": 10,
-      "url": "https://twitter.com/..."
-    },
-    // ... more posts
-  ],
-  "total": 50,
-  "platform": "twitter",
-  "keyword": "Laravel"
-}
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/platforms` | Daftar platform yang didukung |
+| `POST` | `/api/scrape` | Mulai scraping |
+| `POST` | `/api/analyze` | Analisis sentimen teks |
+| `GET` | `/api/scrape-history` | History scraping (paginated) |
+| `DELETE` | `/api/scrape-history/<id>` | Hapus history |
 
-**Note:** If API keys not configured, returns realistic fallback data marked "[Fallback Data]"
+### Export
 
-### POST `/api/analyze`
-Analisis sentimen dari teks
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/export` | Export data ke CSV |
+| `GET` | `/api/exports` | List file export |
+| `GET` | `/api/exports/<file>/download` | Download file export |
+| `DELETE` | `/api/exports/<file>` | Hapus file export |
 
-**Request:**
-```json
-{
-  "texts": [
-    "Produk ini sangat bagus dan memuaskan!",
-    "Sangat kecewa dengan layanannya",
-    "Produk biasa saja"
-  ]
-}
-```
+### Internet Surfer
 
-**Response:**
-```json
-{
-  "success": true,
-  "analysis": {
-    "summary": {
-      "positive": 1,
-      "negative": 1,
-      "neutral": 1
-    },
-    "percentage": {
-      "positive": 33.33,
-      "negative": 33.33,
-      "neutral": 33.34
-    },
-    "details": [
-      {
-        "text": "Produk ini sangat bagus dan memuaskan!",
-        "sentiment": "positive",
-        "confidence": 100
-      },
-      {
-        "text": "Sangat kecewa dengan layanannya",
-        "sentiment": "negative",
-        "confidence": 100
-      },
-      {
-        "text": "Produk biasa saja",
-        "sentiment": "neutral",
-        "confidence": 100
-      }
-    ]
-  }
-}
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/surf` | Full surf (search + extract + analyze) |
+| `POST` | `/api/surf/quick` | Quick search tanpa extract |
+| `POST` | `/api/surf/deep` | Deep surf (multiple queries) |
+| `POST` | `/api/surf/extract` | Extract content dari URL |
+| `POST` | `/api/surf/ai-analyze` | AI-powered analysis |
 
-## 🔐 Konfigurasi - Real API Integration
-
-### Option 1: Development Mode (No API Keys)
-**Aplikasi berjalan dengan fallback data - RECOMMENDED untuk testing**
+### Example: Scrape
 
 ```bash
-# Default .env sudah configured untuk fallback mode
-# Tidak perlu setup API keys
-# Jalankan aplikasi dan testing semua features
-
-php artisan serve
-# Buka http://localhost:8000
+curl -X POST http://localhost:8000/api/scrape \
+  -H "Content-Type: application/json" \
+  -d '{"platform":"reddit","keyword":"python","limit":5}'
 ```
 
-### Option 2: Production Mode (With Real API Keys)
-
-Edit `.env` dan tambahkan API keys sesuai platform yang ingin digunakan:
+### Example: Analyze Sentiment
 
 ```bash
-# Twitter API v2
-TWITTER_BEARER_TOKEN=AAAA...yourtoken
-
-# Instagram Graph API
-INSTAGRAM_ACCESS_TOKEN=EAA...yourtoken
-INSTAGRAM_BUSINESS_ACCOUNT_ID=123456789
-
-# TikTok API
-TIKTOK_CLIENT_KEY=your_client_key
-TIKTOK_CLIENT_SECRET=your_client_secret
-TIKTOK_ACCESS_TOKEN=your_access_token
-
-# Facebook Graph API
-FACEBOOK_ACCESS_TOKEN=EAAC...yourtoken
-FACEBOOK_PAGE_ID=1234567890
-
-# Reddit API
-REDDIT_CLIENT_ID=your_client_id
-REDDIT_CLIENT_SECRET=your_client_secret
-REDDIT_USER_AGENT=Socrapper/1.0
-
-# YouTube Data API v3
-YOUTUBE_API_KEY=AIzaSy...yourkey
+curl -X POST http://localhost:8000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"texts":["bagus sekali","tidak bagus","biasa saja"]}'
 ```
 
-### Getting API Keys
+### Example: Quick Surf
 
-**See [API_SETUP.md](API_SETUP.md) for detailed step-by-step instructions:**
-- Twitter API v2 setup
-- Instagram Graph API setup
-- TikTok API setup
-- Facebook Graph API setup  
-- Reddit API setup
-- YouTube Data API setup
-
-### Applying Configuration Changes
 ```bash
-# After adding API keys to .env
-php artisan cache:clear
-php artisan config:clear
-
-# Reload application
-# http://localhost:8000
+curl -X POST http://localhost:8000/api/surf/quick \
+  -H "Content-Type: application/json" \
+  -d '{"query":"AI news","limit":5}'
 ```
 
-## 📝 Cara Menggunakan
+## How It Works
 
-1. **Pilih Platform**: Pilih salah satu media sosial dari dropdown
-   - Twitter/X
-   - Instagram
-   - TikTok
-   - Facebook
-   - Reddit
-   - YouTube
+### Scraping Flow
 
-2. **Masukkan Keyword**: Ketikkan keyword atau hashtag yang ingin dicari
-   - Contoh: "React", "Laravel", "#technology", "#news"
-
-3. **Tentukan Limit**: Tentukan jumlah data yang ingin diambil (1-1000)
-   - Default: 50
-
-4. **Klik "Mulai Scraping"**: Tekan tombol scraping
-
-5. **Lihat Hasil**:
-   - Tab "Data Mentah" (Raw Data): Tampilkan raw posts yang di-scrape dengan engagement metrics
-   - Tab "Analisis Sentimen": Lihat hasil sentiment analysis dengan percentage breakdown
-   - Tab "Statistik": Lihat engagement statistics (total & average likes, comments, shares)
-
-## 🏗️ Architecture & Real API Integration
-
-### Overview
-Aplikasi menggunakan **Strategy Pattern** untuk platform APIs:
-- Base class `BasePlatformAPI` defines interface
-- Setiap platform implements `scrape()` dan `formatResponse()`
-- `ScraperService` routes requests ke platform yang tepat
-- Automatic fallback ke realistic simulated data
-
-### Data Flow
 ```
-User Input → Controller → ScraperService → Platform API
-                                        ↓
-                            Real Data (if configured)
-                                        or
-                            Fallback Data (if not)
-                                        ↓
-                         Standardized Format
-                                        ↓
-                            Frontend Display
+User Input (keyword + optional platform)
+        ↓
+WebScraperService
+        ↓
+Platform URL builder / Google Search
+        ↓
+Scrapling StealthyFetcher (anti-bot bypass)
+        ↓
+HTML parsing → extract results
+        ↓
+Fallback data jika scraping gagal
+        ↓
+Sentiment analysis → save to history
+        ↓
+JSON response ke frontend
 ```
 
-### Response Format (Standardized)
-```json
-{
-  "id": "platform_specific_id",
-  "platform": "twitter",
-  "author": "username",
-  "text": "post content",
-  "timestamp": "ISO8601",
-  "likes": 100,
-  "comments": 50,
-  "shares": 25,
-  "url": "https://..."
-}
+### Sentiment Analysis
+
+Analisis berbasis keyword dengan negation handling:
+
+```python
+# "bagus" → positive
+# "tidak bagus" → negative (negation detected)
+# "sangat tidak bagus" → negative (3-word window)
+# "biasa saja" → neutral
 ```
 
-For more details, see [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
+Negation window: 3 kata sebelum keyword. Mendeteksi: tidak, bukan, kurang, jangan, belum, ga, gak, nggak, enggak, tanpa.
 
-## ✅ Implementation Status
+### Internet Surfer
 
-### ✅ COMPLETED (v1.1.0)
-- [x] Real API Integration for all 6 platforms
-- [x] OAuth 2.0 and API Key authentication
-- [x] Graceful fallback to simulated data
-- [x] Standardized response format
-- [x] Error handling and logging
-- [x] Sentiment analysis service
-- [x] Statistics calculation
-- [x] Responsive React UI
-- [x] Comprehensive documentation (API_SETUP, TESTING, DEVELOPER guides)
-- [x] Production-ready codebase
+```
+Query → Google News RSS + Google Web Search
+        ↓
+URL extraction (parallel, max 5 concurrent)
+        ↓
+Content extraction (title, author, date, images)
+        ↓
+Merge search + extracted content
+        ↓
+Sentiment analysis on all content
+        ↓
+Summary generation (key topics, sources)
+```
 
-### 🚧 FUTURE FEATURES
-- [ ] Database persistence (scraping history)
-- [ ] Machine Learning based sentiment analysis
-- [ ] User authentication & authorization
-- [ ] Real-time scraping with WebSocket
-- [ ] Advanced data visualization (charts, graphs)
-- [ ] Scheduled scraping tasks
-- [ ] Email notifications
-- [ ] Export to Excel/CSV format
-- [ ] Trending analysis
-- [ ] Platform comparison tools
-- [ ] Rate limiting & request throttling
-- [ ] Caching layer
+## Troubleshooting
 
-## ⚠️ Important Notes
+### Server tidak mau start
 
-### About Real API Integration
-- **Fallback Mode is Default**: Aplikasi berjalan sempurna tanpa API keys menggunakan realistic simulated data
-- **API Keys are Optional**: Tambahkan credentials hanya jika ingin real data dari platforms
-- **No Breaking Changes**: Fallback data ensures development tetap lancar tanpa external dependencies
-- **Production Ready**: Codebase siap deploy dengan optional real API support
+```bash
+# Pastikan port 8000 tidak dipakai
+netstat -ano | findstr :8000
 
-### Best Practices
-- **Security**: Simpan API keys di `.env`, jangan commit ke repository
-- **Rate Limiting**: Perhatikan rate limits setiap platform (lihat API_SETUP.md)
-- **Terms of Service**: Selalu follow TOS dari setiap platform
-- **Privacy**: Perhatikan regulasi data collection (GDPR, etc)
-- **Ethical Scraping**: Scrape secara etis dan bertanggung jawab
-- **Error Handling**: Aplikasi gracefully fallback jika API down
+# Atau pakai port lain
+python manage.py runserver 8001
+```
 
-### Platform-Specific Notes
-See [API_SETUP.md](API_SETUP.md) untuk requirements dan notes per platform:
-- **Twitter**: API v2 dengan bearer token, rate limit 300/15 min
-- **Instagram**: Business accounts only, rate limit 200/hour
-- **TikTok**: Limited API access, use fallback untuk development
-- **Facebook**: Graph API v18.0, rate limit 200/hour
-- **Reddit**: OAuth 2.0 client credentials flow
-- **YouTube**: API key based, rate limit 10,000 units/day
+### Database connection error
 
-## 🐛 Troubleshooting
+```bash
+# Cek .env configuration
+# Untuk development, pakai SQLite:
+DB_ENGINE=sqlite
+```
 
-### Common Issues
+### Scrapling import error
 
-**Dropdown platform kosong**
-- Hard refresh browser (Ctrl+Shift+Delete)
-- Clear browser cache
-- Check `/api/platforms` endpoint returns data
+```bash
+# Install/reinstall scrapling
+pip install --upgrade scrapling
+```
 
-**401 Unauthorized errors**
-- Verify API credentials di `.env`
-- Regenerate tokens dari platform dashboards
-- Check token expiration
+### CORS error di browser
 
-**Tidak ada data yang keluar**
-- Fallback data should appear (marked "[Fallback Data]")
-- Try keyword yang berbeda
-- Check browser console untuk errors
-- Verify platform yang dipilih
+Pastikan `django-cors-headers` terinstall dan `CORS_ALLOW_ALL_ORIGINS = True` di settings.py.
 
-**Application tidak loading**
-- Check `storage/logs/laravel.log`
-- Verify both servers running (Laravel + optional Vite)
-- Restart servers
-
-See [TESTING_GUIDE.md](TESTING_GUIDE.md#troubleshooting) untuk debugging lebih detail
-
-## 📞 Support & Documentation
-
-### Getting Help
-
-1. **Check Documentation First**:
-   - [TESTING_GUIDE.md](TESTING_GUIDE.md) - Feature testing & examples
-   - [API_SETUP.md](API_SETUP.md) - API configuration
-   - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) - Architecture & extending
-   - [REAL_API_CHANGELOG.md](REAL_API_CHANGELOG.md) - Implementation details
-
-2. **Review Logs**:
-   ```bash
-   tail -f storage/logs/laravel.log  # Check for errors
-   ```
-
-3. **Debug in Browser**:
-   - Open DevTools (F12)
-   - Check Network tab untuk API calls
-   - Check Console untuk JavaScript errors
-
-4. **Verify Setup**:
-   - Both servers running? (`php artisan serve` + optional `npm run dev`)
-   - .env configured? (tidak perlu API keys untuk development)
-   - Node modules installed? (`npm install` ran successfully?)
-   - PHP dependencies installed? (`composer install` ran successfully?)
-
-## 🤝 Kontribusi
-
-Silakan membuat pull request untuk improvements atau bug fixes:
+## Contributing
 
 1. Fork repository
-2. Buat branch feature (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push ke branch (`git push origin feature/AmazingFeature`)
+2. Buat feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push ke branch (`git push origin feature/amazing-feature`)
 5. Buka Pull Request
 
-## 📄 Lisensi
+## License
 
-MIT License - Silakan gunakan untuk keperluan personal maupun komersial.
-
----
-
-## 📊 Project Stats
-
-- **Version**: 1.1.0 (Real API Integration)
-- **Last Updated**: May 9, 2026
-- **Status**: ✅ Production Ready
-- **Platforms Supported**: 6 (Twitter, Instagram, TikTok, Facebook, Reddit, YouTube)
-- **Language**: PHP 8.1 + React 18 + JavaScript
-- **Framework**: Laravel 10 + Vite 4
-- **API Calls**: Real API Integration with automatic fallback
+MIT License
 
 ---
 
-**Dibuat dengan ❤️ untuk analisis sentiment media sosial yang lebih baik!**
-
-**🚀 Ready to get started?**
-1. Run `php artisan serve`
-2. Open http://localhost:8000
-3. Read [TESTING_GUIDE.md](TESTING_GUIDE.md)
-4. Start scraping!
-
-
+**Django + Scrapling + React — Scrape the entire internet.**
