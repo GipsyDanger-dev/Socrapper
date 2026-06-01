@@ -42,8 +42,8 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
     const platforms = Object.entries(platformMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const maxPl = platforms[0]?.[1] || 1;
 
-    // Keyword detection from details
-    const details = analysis.details || [];
+    // Keyword detection from details (supports both LLM and keyword-based formats)
+    const details = analysis.results || analysis.details || [];
     const allText = details.map(d => d.text?.toLowerCase() || '').join(' ');
     const posKw = ['bagus', 'mantap', 'great', 'amazing', 'inovatif', 'helpful', 'keren', 'mudah', 'positif', 'berkembang'].filter(k => allText.includes(k));
     const negKw = ['kurang', 'kendala', 'gagal', 'susah', 'mengecewakan', 'frustrasi', 'buruk', 'negatif'].filter(k => allText.includes(k));
@@ -86,6 +86,7 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
                                     <div className="post-by">
                                         {getSentimentLabel(item.sentiment)}
                                         {item.confidence ? ` · ${item.confidence}% confidence` : ''}
+                                        {item.reason ? ` · ${item.reason}` : ''}
                                     </div>
                                 </div>
                                 <div className={`pip ${getSentimentClass(item.sentiment)}`}>

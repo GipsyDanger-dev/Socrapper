@@ -39,16 +39,30 @@ def scrape(request):
 
         try:
             sentiment_result = sentiment_service.analyze_sentiments([r.get('text', '') for r in results])
+
+            # Handle both LLM and keyword-based response formats
+            if 'summary' in sentiment_result:
+                summary = sentiment_result['summary']
+                pos = summary.get('positive', 0)
+                neg = summary.get('negative', 0)
+                neu = summary.get('neutral', 0)
+                pct = summary.get('percentage', {})
+            else:
+                pos = sentiment_result.get('positive', 0)
+                neg = sentiment_result.get('negative', 0)
+                neu = sentiment_result.get('neutral', 0)
+                pct = sentiment_result.get('percentage', {})
+
             ScrapeHistory.objects.create(
                 platform=platform,
                 keyword=keyword,
                 limit=limit,
                 results_count=len(results),
                 sentiment_summary={
-                    'positive': sentiment_result['positive'],
-                    'negative': sentiment_result['negative'],
-                    'neutral': sentiment_result['neutral'],
-                    'percentage': sentiment_result['percentage'],
+                    'positive': pos,
+                    'negative': neg,
+                    'neutral': neu,
+                    'percentage': pct,
                 },
                 raw_data=results,
             )

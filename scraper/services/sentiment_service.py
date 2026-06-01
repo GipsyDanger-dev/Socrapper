@@ -1,4 +1,8 @@
 import re
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SentimentService:
@@ -19,7 +23,92 @@ class SentimentService:
         'ga', 'gak', 'nggak', 'enggak', 'tanpa',
     ]
 
+    def __init__(self):
+        self._llm_service = None
+
+    def _get_llm(self):
+        if self._llm_service is None:
+            try:
+                from surfer.services.llm_analysis_service import LLMAnalysisService
+                self._llm_service = LLMAnalysisService()
+            except Exception:
+                self._llm_service = False
+        return self._llm_service if self._llm_service is not False else None
+
     def analyze_sentiments(self, texts):
+        llm = self._get_llm()
+        if llm and llm.is_configured():
+            result = self._analyze_with_llm(llm, texts)
+            if result:
+                return result
+
+        return self._analyze_with_keywords(texts)
+
+    def _analyze_with_llm(self, llm, texts):
+        try:
+            system_prompt = '''Kamu adalah analis sentimen profesional. Analisis sentimen dari setiap teks yang diberikan.
+
+Untuk setiap teks, tentukan:
+- sentiment: "positive", "negative", atau "neutral"
+- confidence: angka 0-100
+
+Response HARUS dalam format JSON yang valid:
+{
+  "results": [
+    {"text": "teks asli", "sentiment": "positive", "confidence": 85}
+  ],
+  "summary": {
+    "positive": 5,
+    "negative": 3,
+    "neutral": 2,
+    "percentage": {"positive": 50, "negative": 30, "neutral": 20}
+  }
+}
+
+Jangan tambahkan teks lain di luar JSON.'''
+
+            text_list = ''
+            for i, text in enumerate(texts):
+                text_list += f"{i + 1}. {text[:500]}\n\n"
+
+            prompt = f"Analisis sentimen dari teks berikut:\n\n{text_list}"
+            response = llm.analyze(prompt, system_prompt)
+
+            if not response:
+                return None
+
+            parsed = self._parse_json(response)
+            if parsed and 'results' in parsed and 'summary' in parsed:
+                return parsed
+
+            return None
+        except Exception as e:
+            logger.warning(f"LLM sentiment analysis failed: {e}")
+            return None
+
+    def _parse_json(self, response):
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError:
+            pass
+
+        match = re.search(r'```(?:json)?\s*([\s\S]*?)```', response)
+        if match:
+            try:
+                return json.loads(match.group(1).strip())
+            except json.JSONDecodeError:
+                pass
+
+        match = re.search(r'\{[\s\S]*\}', response)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                pass
+
+        return None
+
+    def _analyze_with_keywords(self, texts):
         analysis = {
             'positive': 0,
             'negative': 0,
