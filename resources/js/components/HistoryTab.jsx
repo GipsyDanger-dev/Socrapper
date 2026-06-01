@@ -61,53 +61,44 @@ export default function HistoryTab({ onLoadHistory, onRefresh }) {
 
     if (loading) {
         return (
-            <div className="tab-content active">
-                <p className="info-text">Memuat history...</p>
+            <div className="panel on">
+                <div className="empty-state">Memuat history...</div>
             </div>
         );
     }
 
     if (!history || history.length === 0) {
         return (
-            <div className="tab-content active">
-                <p className="info-text">Belum ada history scraping</p>
+            <div className="panel on">
+                <div className="empty-state">Belum ada history scraping</div>
             </div>
         );
     }
 
     return (
-        <div className="tab-content active">
-            <div className="history-list">
+        <div className="panel on">
+            <div>
                 {history.map((item) => (
                     <div key={item.id} className="history-item">
-                        <div className="history-item-info">
-                            <div className="history-item-keyword">
-                                <span className="data-item-platform">{item.platform}</span>
-                                {' '}{item.keyword}
+                        <div className="history-info">
+                            <div className="history-keyword">
+                                <span className="plat-tag" style={{ marginRight: '6px' }}>{item.platform}</span>
+                                {item.keyword}
                             </div>
-                            <div className="history-item-meta">
-                                <span><i className="fas fa-database"></i> {item.results_count} data</span>
-                                <span><i className="fas fa-clock"></i> {formatDate(item.created_at)}</span>
-                                {item.sentiment_summary && (
-                                    <span className="sentiment-mini">
-                                        <span className="sentiment-dot positive" title="Positif"></span>
-                                        <span className="sentiment-dot neutral" title="Netral"></span>
-                                        <span className="sentiment-dot negative" title="Negatif"></span>
-                                    </span>
-                                )}
+                            <div className="history-meta">
+                                {item.results_count} data · {formatDate(item.created_at)}
                             </div>
                         </div>
-                        <div className="history-item-actions">
+                        <div className="history-actions">
                             <button
-                                className="btn-load"
+                                className="btn-sm"
                                 onClick={() => handleLoad(item)}
                                 disabled={!item.raw_data || item.raw_data.length === 0}
-                                title={!item.raw_data ? 'Data tidak tersedia' : 'Muat data'}
                             >
                                 Muat
                             </button>
                             <button
-                                className="btn-delete-history"
+                                className="btn-sm danger"
                                 onClick={() => handleDelete(item.id)}
                             >
                                 Hapus
@@ -120,19 +111,19 @@ export default function HistoryTab({ onLoadHistory, onRefresh }) {
             {lastPage > 1 && (
                 <div className="pagination">
                     <button
-                        className="btn-pagination"
+                        className="btn-sm"
                         disabled={currentPage <= 1}
                         onClick={() => fetchHistory(currentPage - 1)}
                     >
-                        Sebelumnya
+                        ←
                     </button>
                     <span className="page-info">Halaman {currentPage} dari {lastPage}</span>
                     <button
-                        className="btn-pagination"
+                        className="btn-sm"
                         disabled={currentPage >= lastPage}
                         onClick={() => fetchHistory(currentPage + 1)}
                     >
-                        Selanjutnya
+                        →
                     </button>
                 </div>
             )}

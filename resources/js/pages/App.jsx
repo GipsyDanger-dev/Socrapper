@@ -51,7 +51,6 @@ export default function App() {
             if (result.success) {
                 setData(result.data);
 
-                // Analisis sentimen
                 const analysisResponse = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: {
@@ -68,9 +67,8 @@ export default function App() {
                     setAnalysis(analysisResult.analysis);
                 }
 
-                // Hitung statistik
                 calculateStatistics(result.data);
-                setActiveTab('raw-data');
+                setActiveTab('sentiment');
             } else {
                 alert('Error: ' + result.error);
             }
@@ -105,7 +103,7 @@ export default function App() {
                 }
 
                 calculateStatistics(item.raw_data);
-                setActiveTab('raw-data');
+                setActiveTab('sentiment');
             } catch (error) {
                 console.error('Error loading history:', error);
             } finally {
@@ -148,9 +146,7 @@ export default function App() {
                 body: JSON.stringify(body),
             });
 
-            console.log('Surf response status:', response.status);
             const result = await response.json();
-            console.log('Surf result:', result);
 
             if (result.success) {
                 setSurfResults(result);
@@ -260,10 +256,8 @@ export default function App() {
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
-
-                alert('✅ File berhasil didownload!');
             } else {
-                alert('❌ Error: Gagal export file');
+                alert('Error: Gagal export file');
             }
         } catch (error) {
             console.error('Export error:', error);
@@ -273,148 +267,167 @@ export default function App() {
         }
     };
 
-    return (
-        <div className="app">
-            <LoadingIndicator show={loading} />
+    const hasData = data.length > 0 || surfResults;
 
-            <header className="header">
-                <div className="header-content">
-                    <h1><i className="fas fa-globe"></i> Socrapper</h1>
-                    <p>
+    return (
+        <div className="root">
+            {/* Masthead */}
+            <header className="mh">
+                <div>
+                    <h1 className="logo">Socrapper</h1>
+                    <p className="tag">
                         {currentMode === 'scraper'
-                            ? 'Social Media Sentiment Analysis Tool'
-                            : '🌐 Internet Surfing & Sentiment Analysis'
+                            ? 'Social Media Sentiment Scraper'
+                            : 'Internet Surfing & Sentiment Analysis'
                         }
                     </p>
                 </div>
+                <div className="mh-meta">
+                    {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    <br />9 Platforms
+                </div>
             </header>
 
-            <main className="main-content">
-                <div className="content-grid">
-                    <InputSection onScrape={handleScrape} onSurf={handleSurf} />
+            {/* Issue bar */}
+            {currentKeyword && (
+                <div className="ib">
+                    <span className="it">query: <strong>"{currentKeyword}"</strong></span>
+                    <span className="it">hasil: <strong>{data.length || (surfResults?.total_results || 0)}</strong></span>
+                    <span className="it">platform: <strong>{currentPlatform || 'multi'}</strong></span>
+                </div>
+            )}
 
-                    <section className="results-section">
-                        <div className="tabs">
-                            {currentMode === 'scraper' ? (
-                                <>
-                                    <button
-                                        className={`tab-btn ${activeTab === 'raw-data' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('raw-data')}
-                                    >
-                                        📊 Data Mentah
-                                    </button>
-                                    <button
-                                        className={`tab-btn ${activeTab === 'sentiment' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('sentiment')}
-                                    >
-                                        😊 Analisis Sentimen
-                                    </button>
-                                    <button
-                                        className={`tab-btn ${activeTab === 'statistics' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('statistics')}
-                                    >
-                                        📈 Statistik
-                                    </button>
-                                    <button
-                                        className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('history')}
-                                    >
-                                        📋 History
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <button
-                                        className={`tab-btn ${activeTab === 'surf-results' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('surf-results')}
-                                    >
-                                        🌐 Hasil Surfing
-                                    </button>
-                                    {analysis && (
-                                        <button
-                                            className={`tab-btn ${activeTab === 'sentiment' ? 'active' : ''}`}
-                                            onClick={() => setActiveTab('sentiment')}
-                                        >
-                                            😊 Analisis Sentimen
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                        </div>
+            {/* Input */}
+            <InputSection onScrape={handleScrape} onSurf={handleSurf} />
 
-                        {data.length > 0 && currentMode === 'scraper' && (
-                            <div className="export-buttons">
+            {/* Loading */}
+            <LoadingIndicator show={loading} keyword={currentKeyword} />
+
+            {/* Tabs + panels */}
+            {hasData && (
+                <div className="tabs-wrap">
+                    <div className="tabs-bar">
+                        {currentMode === 'scraper' ? (
+                            <>
                                 <button
-                                    className="btn-export"
-                                    onClick={() => handleExportData('scraping')}
-                                    title="Export raw data to CSV"
+                                    className={`tab ${activeTab === 'sentiment' ? 'on' : ''}`}
+                                    onClick={() => setActiveTab('sentiment')}
                                 >
-                                    📥 Export Raw Data
+                                    Sentimen
+                                </button>
+                                <button
+                                    className={`tab ${activeTab === 'raw-data' ? 'on' : ''}`}
+                                    onClick={() => setActiveTab('raw-data')}
+                                >
+                                    Data Mentah
+                                </button>
+                                <button
+                                    className={`tab ${activeTab === 'statistics' ? 'on' : ''}`}
+                                    onClick={() => setActiveTab('statistics')}
+                                >
+                                    Statistik
+                                </button>
+                                <button
+                                    className={`tab ${activeTab === 'history' ? 'on' : ''}`}
+                                    onClick={() => setActiveTab('history')}
+                                >
+                                    History
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    className={`tab ${activeTab === 'surf-results' ? 'on' : ''}`}
+                                    onClick={() => setActiveTab('surf-results')}
+                                >
+                                    Hasil Surfing
                                 </button>
                                 {analysis && (
                                     <button
-                                        className="btn-export"
-                                        onClick={() => handleExportData('analysis')}
-                                        title="Export sentiment analysis to CSV"
+                                        className={`tab ${activeTab === 'sentiment' ? 'on' : ''}`}
+                                        onClick={() => setActiveTab('sentiment')}
                                     >
-                                        📥 Export Sentiment
+                                        Sentimen
                                     </button>
-                                )}
-                                {statistics && (
-                                    <button
-                                        className="btn-export"
-                                        onClick={() => handleExportData('statistics')}
-                                        title="Export statistics to CSV"
-                                    >
-                                        📥 Export Statistics
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === 'raw-data' && currentMode === 'scraper' && (
-                            <RawDataTab data={data} />
-                        )}
-                        {activeTab === 'surf-results' && currentMode === 'surfer' && (
-                            <>
-                                <SurfResultsTab results={surfResults} />
-                                {surfResults && surfResults.total_results > 0 && (
-                                    <div className="ai-analysis-section">
-                                        <div className="ai-buttons">
-                                            <button 
-                                                className="btn-ai" 
-                                                onClick={() => handleAiAnalyze('general')}
-                                                disabled={aiLoading}
-                                            >
-                                                {aiLoading ? '⏳ AI sedang analisis...' : '🤖 AI General Analysis'}
-                                            </button>
-                                            <button 
-                                                className="btn-ai btn-ai-market" 
-                                                onClick={() => handleAiAnalyze('market')}
-                                                disabled={aiLoading}
-                                            >
-                                                {aiLoading ? '⏳ AI sedang analisis...' : '📈 AI Market Analysis'}
-                                            </button>
-                                        </div>
-                                        {aiAnalysis && <AiAnalysisCard analysis={aiAnalysis} />}
-                                    </div>
                                 )}
                             </>
                         )}
-                        {activeTab === 'sentiment' && <SentimentTab analysis={analysis} />}
-                        {activeTab === 'history' && currentMode === 'scraper' && (
-                            <HistoryTab
-                                key={historyRefreshKey}
-                                onLoadHistory={handleLoadHistory}
-                                onRefresh={() => setHistoryRefreshKey(k => k + 1)}
-                            />
-                        )}
-                        {activeTab === 'statistics' && currentMode === 'scraper' && (
-                            <StatisticsTab statistics={statistics} />
-                        )}
-                    </section>
+                        <span className="tab-rc">
+                            {data.length || (surfResults?.total_results || 0)} hasil
+                        </span>
+                    </div>
+
+                    {/* PANEL: Sentiment */}
+                    {activeTab === 'sentiment' && (
+                        <SentimentTab
+                            analysis={analysis}
+                            data={data}
+                            currentKeyword={currentKeyword}
+                            onExport={() => handleExportData('analysis')}
+                        />
+                    )}
+
+                    {/* PANEL: Raw Data */}
+                    {activeTab === 'raw-data' && currentMode === 'scraper' && (
+                        <RawDataTab
+                            data={data}
+                            onExport={() => handleExportData('scraping')}
+                        />
+                    )}
+
+                    {/* PANEL: Statistics */}
+                    {activeTab === 'statistics' && currentMode === 'scraper' && (
+                        <StatisticsTab statistics={statistics} />
+                    )}
+
+                    {/* PANEL: History */}
+                    {activeTab === 'history' && currentMode === 'scraper' && (
+                        <HistoryTab
+                            key={historyRefreshKey}
+                            onLoadHistory={handleLoadHistory}
+                            onRefresh={() => setHistoryRefreshKey(k => k + 1)}
+                        />
+                    )}
+
+                    {/* PANEL: Surf Results */}
+                    {activeTab === 'surf-results' && currentMode === 'surfer' && (
+                        <>
+                            <SurfResultsTab results={surfResults} />
+                            {surfResults && surfResults.total_results > 0 && (
+                                <div className="ai-section">
+                                    <div className="ai-buttons">
+                                        <button
+                                            className="ai-btn"
+                                            onClick={() => handleAiAnalyze('general')}
+                                            disabled={aiLoading}
+                                        >
+                                            {aiLoading ? 'AI menganalisis...' : 'AI General Analysis'}
+                                        </button>
+                                        <button
+                                            className="ai-btn"
+                                            onClick={() => handleAiAnalyze('market')}
+                                            disabled={aiLoading}
+                                        >
+                                            {aiLoading ? 'AI menganalisis...' : 'AI Market Analysis'}
+                                        </button>
+                                    </div>
+                                    {aiAnalysis && <AiAnalysisCard analysis={aiAnalysis} />}
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* Export row for scraper mode */}
+                    {data.length > 0 && currentMode === 'scraper' && activeTab !== 'history' && (
+                        <div className="exp-row">
+                            <span className="exp-note">{data.length} baris · UTF-8</span>
+                            <button className="exp-btn" onClick={() => handleExportData('scraping')}>
+                                ↓ CSV
+                            </button>
+                        </div>
+                    )}
                 </div>
-            </main>
+            )}
         </div>
     );
 }

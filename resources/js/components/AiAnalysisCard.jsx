@@ -4,155 +4,141 @@ export default function AiAnalysisCard({ analysis }) {
     if (!analysis) return null;
 
     const getSentimentColor = (sentiment) => {
-        if (!sentiment) return '#6b7280';
+        if (!sentiment) return 'var(--color-neutral)';
         const s = (sentiment.overall || sentiment).toLowerCase();
-        if (s === 'bullish' || s === 'positive') return '#10b981';
-        if (s === 'bearish' || s === 'negative') return '#ef4444';
-        if (s === 'mixed') return '#f59e0b';
-        return '#6b7280';
+        if (s === 'bullish' || s === 'positive') return 'var(--color-positive)';
+        if (s === 'bearish' || s === 'negative') return 'var(--color-negative)';
+        return 'var(--color-neutral)';
     };
 
-    const getSentimentEmoji = (sentiment) => {
-        if (!sentiment) return '😐';
+    const getSentimentLabel = (sentiment) => {
+        if (!sentiment) return 'NETRAL';
         const s = (sentiment.overall || sentiment).toLowerCase();
-        if (s === 'bullish' || s === 'positive') return '🟢';
-        if (s === 'bearish' || s === 'negative') return '🔴';
-        if (s === 'mixed') return '🟡';
-        return '⚪';
+        if (s === 'bullish' || s === 'positive') return 'POSITIF';
+        if (s === 'bearish' || s === 'negative') return 'NEGATIF';
+        return 'NETRAL';
     };
 
     return (
-        <div className="ai-analysis-card">
-            <div className="ai-header">
-                <h3>🤖 AI Analysis</h3>
-                <span className="ai-model-badge">
-                    {analysis.model || 'MiMo v2.5 Pro'}
-                </span>
-            </div>
-
+        <div style={{ marginTop: '16px' }}>
             {/* Sentiment Overview */}
             {analysis.sentiment && (
-                <div className="ai-sentiment-overview">
-                    <div className="ai-sentiment-main" style={{borderColor: getSentimentColor(analysis.sentiment)}}>
-                        <span className="ai-sentiment-emoji">{getSentimentEmoji(analysis.sentiment)}</span>
-                        <div>
-                            <span className="ai-sentiment-label" style={{color: getSentimentColor(analysis.sentiment)}}>
-                                {(analysis.sentiment.overall || 'neutral').toUpperCase()}
-                            </span>
-                            {analysis.sentiment.confidence !== undefined && (
-                                <span className="ai-confidence">
-                                    Confidence: {analysis.sentiment.confidence}%
-                                </span>
-                            )}
-                            {analysis.sentiment.score !== undefined && (
-                                <span className="ai-confidence">
-                                    Score: {analysis.sentiment.score > 0 ? '+' : ''}{analysis.sentiment.score}
-                                </span>
-                            )}
+                <div className="tc" style={{ marginBottom: '16px' }}>
+                    <div className="cell">
+                        <div className="cn" style={{ color: getSentimentColor(analysis.sentiment) }}>
+                            {getSentimentLabel(analysis.sentiment)}
                         </div>
+                        <div className="clbl">sentimen</div>
                     </div>
-                    {analysis.timeframe && (
-                        <span className="ai-timeframe">⏱️ {analysis.timeframe}</span>
-                    )}
+                    <div className="cell">
+                        <div className="cn">
+                            {analysis.sentiment.confidence !== undefined ? `${analysis.sentiment.confidence}%` : '—'}
+                        </div>
+                        <div className="clbl">confidence</div>
+                    </div>
+                    <div className="cell">
+                        <div className="cn">
+                            {analysis.sentiment.score !== undefined
+                                ? (analysis.sentiment.score > 0 ? '+' : '') + analysis.sentiment.score
+                                : '—'
+                            }
+                        </div>
+                        <div className="clbl">skor</div>
+                    </div>
                 </div>
             )}
 
-            {/* Summary / Analysis */}
+            {/* Summary */}
             {(analysis.summary || analysis.analysis) && (
-                <div className="ai-section">
-                    <h4>📋 Ringkasan</h4>
+                <div className="pq">
                     <p>{analysis.summary || analysis.analysis}</p>
+                    <cite>AI Analysis · {analysis.model || 'LLM'}</cite>
                 </div>
             )}
 
-            {/* Key Points / Findings */}
+            {/* Key Points */}
             {(analysis.key_points || analysis.key_findings) && (analysis.key_points || analysis.key_findings).length > 0 && (
-                <div className="ai-section">
-                    <h4>🎯 Poin Utama</h4>
-                    <ul>
+                <div style={{ marginBottom: '16px' }}>
+                    <p className="srule">poin utama</p>
+                    <div className="post-list">
                         {(analysis.key_points || analysis.key_findings).map((point, i) => (
-                            <li key={i}>{point}</li>
+                            <div key={i} className="post-row">
+                                <div className="post-text" style={{ fontSize: '12px' }}>{point}</div>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </div>
             )}
 
-            {/* Risk Factors */}
+            {/* Risks */}
             {analysis.risk_factors && analysis.risk_factors.length > 0 && (
-                <div className="ai-section">
-                    <h4>⚠️ Risiko</h4>
-                    <ul className="risk-list">
+                <div style={{ marginBottom: '16px' }}>
+                    <p className="srule" style={{ borderColor: 'var(--color-negative)', color: 'var(--color-negative)' }}>risiko</p>
+                    <div className="post-list">
                         {analysis.risk_factors.map((risk, i) => (
-                            <li key={i}>{risk}</li>
+                            <div key={i} className="post-row">
+                                <div className="post-text" style={{ fontSize: '12px' }}>{risk}</div>
+                                <div className="pip neg">!</div>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </div>
             )}
 
             {/* Opportunities */}
             {analysis.opportunities && analysis.opportunities.length > 0 && (
-                <div className="ai-section">
-                    <h4>🚀 Peluang</h4>
-                    <ul className="opportunity-list">
+                <div style={{ marginBottom: '16px' }}>
+                    <p className="srule" style={{ borderColor: 'var(--color-positive)', color: 'var(--color-positive)' }}>peluang</p>
+                    <div className="post-list">
                         {analysis.opportunities.map((opp, i) => (
-                            <li key={i}>{opp}</li>
+                            <div key={i} className="post-row">
+                                <div className="post-text" style={{ fontSize: '12px' }}>{opp}</div>
+                                <div className="pip pos">✓</div>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </div>
             )}
 
             {/* Recommendation */}
             {analysis.recommendation && (
-                <div className="ai-section ai-recommendation">
-                    <h4>💡 Rekomendasi</h4>
+                <div className="pq" style={{ borderLeftColor: 'var(--color-positive)' }}>
                     <p>{analysis.recommendation}</p>
+                    <cite>Rekomendasi</cite>
                 </div>
             )}
 
             {/* Entities */}
             {analysis.entities && (
-                <div className="ai-section">
-                    <h4>🏷️ Entitas Terdeteksi</h4>
-                    <div className="ai-entities">
-                        {analysis.entities.people && analysis.entities.people.length > 0 && (
-                            <div className="entity-group">
-                                <span className="entity-label">👤 Orang:</span>
-                                {analysis.entities.people.map((p, i) => (
-                                    <span key={i} className="entity-tag">{p}</span>
-                                ))}
-                            </div>
-                        )}
-                        {analysis.entities.organizations && analysis.entities.organizations.length > 0 && (
-                            <div className="entity-group">
-                                <span className="entity-label">🏢 Organisasi:</span>
-                                {analysis.entities.organizations.map((o, i) => (
-                                    <span key={i} className="entity-tag">{o}</span>
-                                ))}
-                            </div>
-                        )}
-                        {analysis.entities.topics && analysis.entities.topics.length > 0 && (
-                            <div className="entity-group">
-                                <span className="entity-label">📌 Topik:</span>
-                                {analysis.entities.topics.map((t, i) => (
-                                    <span key={i} className="entity-tag">{t}</span>
-                                ))}
-                            </div>
-                        )}
+                <div style={{ marginBottom: '16px' }}>
+                    <p className="srule">entitas terdeteksi</p>
+                    <div className="kw-cloud">
+                        {analysis.entities.people && analysis.entities.people.map((p, i) => (
+                            <span key={`p-${i}`} className="kw">{p}</span>
+                        ))}
+                        {analysis.entities.organizations && analysis.entities.organizations.map((o, i) => (
+                            <span key={`o-${i}`} className="kw">{o}</span>
+                        ))}
+                        {analysis.entities.topics && analysis.entities.topics.map((t, i) => (
+                            <span key={`t-${i}`} className="kw">{t}</span>
+                        ))}
                     </div>
                 </div>
             )}
 
             {/* Credibility */}
             {analysis.credibility && analysis.credibility.score > 0 && (
-                <div className="ai-section">
-                    <h4>🔍 Kredibilitas Sumber</h4>
-                    <div className="credibility-bar">
-                        <div 
-                            className="credibility-fill" 
-                            style={{width: `${analysis.credibility.score}%`}}
-                        ></div>
+                <div>
+                    <p className="srule">kredibilitas sumber</p>
+                    <div className="bar-block">
+                        <div className="bar-meta">
+                            <span className="bar-name">skor</span>
+                            <span className="bar-pct">{analysis.credibility.score}/100</span>
+                        </div>
+                        <div className="bar-track">
+                            <div className="bar-fill" style={{ width: `${analysis.credibility.score}%` }}></div>
+                        </div>
                     </div>
-                    <span className="credibility-score">{analysis.credibility.score}/100</span>
                 </div>
             )}
         </div>
