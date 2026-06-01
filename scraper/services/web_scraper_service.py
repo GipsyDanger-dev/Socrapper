@@ -85,17 +85,29 @@ class WebScraperService:
                 # Extract actual article URL from description
                 article_url = self._extract_article_url(description) or link
 
-                # Clean snippet
-                clean_snippet = re.sub(r'<[^>]*>', '', description)
+                # Clean snippet — strip all HTML tags and decode entities
+                clean_snippet = re.sub(r'<[^>]*>', ' ', description)
+                clean_snippet = re.sub(r'&nbsp;', ' ', clean_snippet)
+                clean_snippet = re.sub(r'&amp;', '&', clean_snippet)
+                clean_snippet = re.sub(r'&lt;', '<', clean_snippet)
+                clean_snippet = re.sub(r'&gt;', '>', clean_snippet)
+                clean_snippet = re.sub(r'&quot;', '"', clean_snippet)
+                clean_snippet = re.sub(r'&#39;', "'", clean_snippet)
                 clean_snippet = re.sub(r'https?://news\.google\.com[^\s]*', '', clean_snippet)
                 clean_snippet = re.sub(r'\s+', ' ', clean_snippet).strip()
 
-                if title and link:
+                # Clean title too
+                clean_title = re.sub(r'<[^>]*>', '', title)
+                clean_title = re.sub(r'&nbsp;', ' ', clean_title)
+                clean_title = re.sub(r'&amp;', '&', clean_title)
+                clean_title = re.sub(r'\s+', ' ', clean_title).strip()
+
+                if clean_title and link:
                     results.append({
                         'id': hashlib.md5(f"{platform or 'news'}-{len(results)}-{query}".encode()).hexdigest()[:12],
                         'platform': platform or 'news',
                         'author': source or self._extract_domain(article_url),
-                        'text': f"{title}. {clean_snippet}" if clean_snippet else title,
+                        'text': f"{clean_title}. {clean_snippet}" if clean_snippet else clean_title,
                         'timestamp': self._parse_date(pub_date),
                         'likes': random.randint(0, 500),
                         'comments': random.randint(0, 100),
