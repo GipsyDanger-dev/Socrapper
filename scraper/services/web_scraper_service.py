@@ -139,16 +139,13 @@ class WebScraperService:
         """Remove all HTML tags and decode common entities."""
         if not text:
             return ''
+        import html as html_mod
+        # Decode entities first (handles double-encoded HTML like &lt;a&gt;)
+        clean = html_mod.unescape(text)
+        # Run twice for double-encoding
+        clean = html_mod.unescape(clean)
         # Remove tags
-        clean = re.sub(r'<[^>]*>', ' ', text)
-        # Decode entities
-        clean = clean.replace('&nbsp;', ' ')
-        clean = clean.replace('&amp;', '&')
-        clean = clean.replace('&lt;', '<')
-        clean = clean.replace('&gt;', '>')
-        clean = clean.replace('&quot;', '"')
-        clean = clean.replace('&#39;', "'")
-        clean = clean.replace('&apos;', "'")
+        clean = re.sub(r'<[^>]*>', ' ', clean)
         # Collapse whitespace
         clean = re.sub(r'\s+', ' ', clean).strip()
         return clean
