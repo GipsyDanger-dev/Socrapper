@@ -86,21 +86,12 @@ class WebScraperService:
                 article_url = self._extract_article_url(description) or link
 
                 # Clean snippet — strip all HTML tags and decode entities
-                clean_snippet = re.sub(r'<[^>]*>', ' ', description)
-                clean_snippet = re.sub(r'&nbsp;', ' ', clean_snippet)
-                clean_snippet = re.sub(r'&amp;', '&', clean_snippet)
-                clean_snippet = re.sub(r'&lt;', '<', clean_snippet)
-                clean_snippet = re.sub(r'&gt;', '>', clean_snippet)
-                clean_snippet = re.sub(r'&quot;', '"', clean_snippet)
-                clean_snippet = re.sub(r'&#39;', "'", clean_snippet)
+                clean_snippet = self._strip_html(description)
                 clean_snippet = re.sub(r'https?://news\.google\.com[^\s]*', '', clean_snippet)
                 clean_snippet = re.sub(r'\s+', ' ', clean_snippet).strip()
 
                 # Clean title too
-                clean_title = re.sub(r'<[^>]*>', '', title)
-                clean_title = re.sub(r'&nbsp;', ' ', clean_title)
-                clean_title = re.sub(r'&amp;', '&', clean_title)
-                clean_title = re.sub(r'\s+', ' ', clean_title).strip()
+                clean_title = self._strip_html(title)
 
                 if clean_title and link:
                     results.append({
@@ -143,6 +134,24 @@ class WebScraperService:
             return parsedate_to_datetime(date_str).isoformat()
         except Exception:
             return (datetime.now() - timedelta(hours=random.randint(1, 24))).isoformat()
+
+    def _strip_html(self, text):
+        """Remove all HTML tags and decode common entities."""
+        if not text:
+            return ''
+        # Remove tags
+        clean = re.sub(r'<[^>]*>', ' ', text)
+        # Decode entities
+        clean = clean.replace('&nbsp;', ' ')
+        clean = clean.replace('&amp;', '&')
+        clean = clean.replace('&lt;', '<')
+        clean = clean.replace('&gt;', '>')
+        clean = clean.replace('&quot;', '"')
+        clean = clean.replace('&#39;', "'")
+        clean = clean.replace('&apos;', "'")
+        # Collapse whitespace
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        return clean
 
     def get_platforms(self):
         return [
