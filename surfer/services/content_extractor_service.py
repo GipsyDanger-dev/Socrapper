@@ -274,6 +274,10 @@ class ContentExtractorService:
             return ''
 
     def _clean_text(self, text):
+        import html as html_mod
+        text = html_mod.unescape(text)
+        text = html_mod.unescape(text)
+        text = re.sub(r'<[^>]*>', ' ', text)
         text = re.sub(r'\s+', ' ', text)
         text = re.sub(r'\n{3,}', '\n\n', text)
         return text.strip()

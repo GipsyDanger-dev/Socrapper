@@ -35,6 +35,17 @@ class InternetSurferService:
         self.content_extractor = ContentExtractorService()
         self.sentiment_service = SentimentService()
 
+    @staticmethod
+    def _strip_html(text):
+        if not text:
+            return ''
+        import html as html_mod
+        clean = html_mod.unescape(text)
+        clean = html_mod.unescape(clean)
+        clean = re.sub(r'<[^>]*>', ' ', clean)
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        return clean
+
     def surf(self, query, options=None):
         options = options or {}
         search_limit = options.get('search_limit', 5)
@@ -64,8 +75,7 @@ class InternetSurferService:
                 texts = []
                 for item in merged_results:
                     parts = [item.get('title', ''), item.get('snippet', ''), item.get('content_excerpt', '')]
-                    text = '. '.join(p for p in parts if p)
-                    text = re.sub(r'<[^>]*>', '', text).strip()
+                    text = '. '.join(self._strip_html(p) for p in parts if p)
                     if len(text) > 10:
                         texts.append(text)
 
@@ -115,7 +125,7 @@ class InternetSurferService:
 
         texts = []
         for item in unique_results:
-            text = f"{item.get('title', '')}. {item.get('content_excerpt', '')}"
+            text = self._strip_html(f"{item.get('title', '')}. {item.get('content_excerpt', '')}")
             if len(text.strip()) > 10:
                 texts.append(text)
 
@@ -147,9 +157,9 @@ class InternetSurferService:
 
         for index, search_result in enumerate(search_results):
             item = {
-                'title': search_result.get('title', ''),
+                'title': self._strip_html(search_result.get('title', '')),
                 'url': search_result.get('url', ''),
-                'snippet': search_result.get('snippet', ''),
+                'snippet': self._strip_html(search_result.get('snippet', '')),
                 'source': search_result.get('source', ''),
                 'content': '',
                 'content_excerpt': '',
@@ -162,7 +172,7 @@ class InternetSurferService:
 
             if index < len(extracted_data) and extracted_data[index] and extracted_data[index].get('success'):
                 extracted = extracted_data[index]
-                item['content'] = extracted.get('content', '')
+                item['content'] = self._strip_html(extracted.get('content', ''))
                 item['content_excerpt'] = self._get_content_excerpt(extracted.get('content', ''), 500)
                 item['author'] = extracted.get('author', '')
                 item['publish_date'] = extracted.get('publish_date', '')
@@ -175,6 +185,7 @@ class InternetSurferService:
         return merged
 
     def _get_content_excerpt(self, content, max_length=500):
+        content = self._strip_html(content)
         if not content or len(content) <= max_length:
             return content or ''
 
@@ -220,7 +231,7 @@ class InternetSurferService:
         for result in results:
             all_text += ' ' + (result.get('title', '') or '') + ' ' + (result.get('content_excerpt', '') or '')
 
-        all_text = re.sub(r'<[^>]*>', '', all_text.lower())
+        all_text = self._strip_html(all_text.lower())
         words = re.split(r'\s+', all_text)
         words = [w for w in words if len(w) > 3 and w not in STOPWORDS and not w.isdigit()]
 

@@ -58,7 +58,7 @@ class SearchEngineService:
 
                 article_url = self._extract_article_url(description) or link
 
-                clean_snippet = re.sub(r'<[^>]*>', '', description)
+                clean_snippet = self._strip_html(description)
                 clean_snippet = re.sub(r'https?://news\.google\.com[^\s]*', '', clean_snippet)
                 clean_snippet = re.sub(r'\s+', ' ', clean_snippet).strip()
 
@@ -151,3 +151,13 @@ class SearchEngineService:
     def _decode_html(self, text):
         import html
         return html.unescape(text)
+
+    def _strip_html(self, text):
+        if not text:
+            return ''
+        import html as html_mod
+        clean = html_mod.unescape(text)
+        clean = html_mod.unescape(clean)
+        clean = re.sub(r'<[^>]*>', ' ', clean)
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        return clean

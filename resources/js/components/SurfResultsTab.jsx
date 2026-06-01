@@ -132,13 +132,13 @@ export default function SurfResultsTab({ results }) {
                                 )}
                                 {item.content && (
                                     <div style={{ marginTop: '8px', padding: '12px', background: 'var(--color-surface)', fontSize: '12px', lineHeight: '1.6', maxHeight: '300px', overflow: 'auto' }}>
-                                        {item.content.substring(0, 2000)}
-                                        {item.content.length > 2000 && '...'}
+                                        {cleanText(item.content).substring(0, 2000)}
+                                        {cleanText(item.content).length > 2000 && '...'}
                                     </div>
                                 )}
                                 {item.content_excerpt && !item.content && (
                                     <div style={{ marginTop: '8px', padding: '12px', background: 'var(--color-surface)', fontSize: '12px', lineHeight: '1.6' }}>
-                                        {item.content_excerpt}
+                                        {cleanText(item.content_excerpt)}
                                     </div>
                                 )}
                                 <div style={{ marginTop: '6px', fontSize: '9px', color: item.extraction_success ? 'var(--color-positive)' : 'var(--color-text-faded)' }}>
