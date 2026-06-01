@@ -33,6 +33,34 @@ export default function SurfResultsTab({ results }) {
         );
     }
 
+    // Clean all result text fields upfront
+    const cleanItem = (item) => {
+        const c = (t) => {
+            if (!t) return '';
+            return String(t)
+                .replace(/<[^>]*>/g, ' ')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+        return {
+            ...item,
+            title: c(item.title),
+            snippet: c(item.snippet),
+            description: c(item.description),
+            content: c(item.content),
+            content_excerpt: c(item.content_excerpt),
+            source: c(item.source),
+            author: c(item.author),
+        };
+    };
+    displayResults = displayResults.map(cleanItem);
+
     const cleanText = (text) => {
         if (!text) return '';
         return text

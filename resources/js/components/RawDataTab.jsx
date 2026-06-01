@@ -9,6 +9,20 @@ function fmtK(n) {
     return String(n);
 }
 
+const cleanHtml = (t) => {
+    if (!t) return '';
+    return String(t)
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
 export default function RawDataTab({ data, onExport }) {
     const [page, setPage] = useState(0);
 
@@ -51,7 +65,7 @@ export default function RawDataTab({ data, onExport }) {
                         return (
                             <tr key={index}>
                                 <td>
-                                    <div className="raw-content">{item.text}</div>
+                                    <div className="raw-content">{cleanHtml(item.text)}</div>
                                     <div className="raw-date">
                                         {item.timestamp
                                             ? new Date(item.timestamp).toLocaleString('id-ID')
