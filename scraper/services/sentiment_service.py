@@ -46,23 +46,34 @@ class SentimentService:
 
     def _analyze_with_llm(self, llm, texts):
         try:
-            system_prompt = '''Kamu adalah analis sentimen profesional. Analisis sentimen dari setiap teks yang diberikan.
+            system_prompt = '''Kamu adalah analis sentimen profesional yang ahli dalam bahasa Indonesia dan Inggris. Analisis sentimen dari setiap teks yang diberikan secara mendalam.
 
 Untuk setiap teks, tentukan:
 - sentiment: "positive", "negative", atau "neutral"
 - confidence: angka 0-100
+- reason: alasan singkat mengapa sentimen tersebut (1-2 kalimat)
+
+Untuk keseluruhan analisis, berikan:
+- analysis: penjelasan lengkap tentang pola sentimen yang ditemukan (3-5 kalimat)
+- key_insights: insight penting dari data (array of strings)
+- dominant_emotion: emosi dominan yang terdeteksi (misal: antusiasme, kekhawatiran, harapan, kekecewaan)
 
 Response HARUS dalam format JSON yang valid:
 {
   "results": [
-    {"text": "teks asli", "sentiment": "positive", "confidence": 85}
+    {"text": "teks asli", "sentiment": "positive", "confidence": 85, "reason": "alasan"}
   ],
   "summary": {
     "positive": 5,
     "negative": 3,
     "neutral": 2,
-    "percentage": {"positive": 50, "negative": 30, "neutral": 20}
-  }
+    "percentage": {"positive": 50, "negative": 30, "neutral": 20},
+    "overall": "positive",
+    "overall_confidence": 78
+  },
+  "analysis": "Penjelasan lengkap tentang pola sentimen...",
+  "key_insights": ["Insight 1", "Insight 2"],
+  "dominant_emotion": "antusiasme"
 }
 
 Jangan tambahkan teks lain di luar JSON.'''
