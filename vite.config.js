@@ -9,14 +9,19 @@ export default defineConfig({
             '@': path.resolve(__dirname, './resources/js'),
         },
     },
+    build: {
+        outDir: 'public/build',
+        emptyOutDir: true,
+        manifest: true,
+    },
     server: {
         proxy: {
             '/api': {
-                target: 'http://localhost:8000',
+                target: 'http://localhost:8001',
                 changeOrigin: true,
             },
             '/exports': {
-                target: 'http://localhost:8000',
+                target: 'http://localhost:8001',
                 changeOrigin: true,
             },
         },
