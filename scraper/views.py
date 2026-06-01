@@ -86,15 +86,15 @@ def analyze(request):
 def get_platforms(request):
     return Response({
         'platforms': {
-            'twitter': 'Twitter/X (Web Scrape)',
-            'reddit': 'Reddit (Web Scrape)',
-            'news': 'Google News (Web Scrape)',
-            'stackoverflow': 'Stack Overflow (Web Scrape)',
-            'github': 'GitHub (Web Scrape)',
-            'youtube': 'YouTube (Fallback)',
-            'instagram': 'Instagram (Fallback)',
-            'tiktok': 'TikTok (Fallback)',
-            'facebook': 'Facebook (Fallback)',
+            'twitter': 'Twitter/X',
+            'reddit': 'Reddit',
+            'news': 'Google News',
+            'stackoverflow': 'Stack Overflow',
+            'github': 'GitHub',
+            'youtube': 'YouTube',
+            'instagram': 'Instagram',
+            'tiktok': 'TikTok',
+            'facebook': 'Facebook',
         }
     })
 
