@@ -7,6 +7,8 @@ import HistoryTab from '../components/HistoryTab';
 import SurfResultsTab from '../components/SurfResultsTab';
 import AiAnalysisCard from '../components/AiAnalysisCard';
 import LoadingIndicator from '../components/LoadingIndicator';
+import HomeContent from '../components/HomeContent';
+import HomeSidebar from '../components/HomeSidebar';
 
 export default function App() {
     const [activeTab, setActiveTab] = useState('raw-data');
@@ -18,6 +20,7 @@ export default function App() {
     const [currentKeyword, setCurrentKeyword] = useState('');
     const [currentMode, setCurrentMode] = useState('scraper');
     const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+    const [loadingStage, setLoadingStage] = useState(null);
 
     // Surf state
     const [surfResults, setSurfResults] = useState(null);
@@ -26,6 +29,7 @@ export default function App() {
 
     const handleScrape = async (platform, keyword, limit) => {
         setLoading(true);
+        setLoadingStage('collecting');
         setCurrentPlatform(platform);
         setCurrentKeyword(keyword);
         setCurrentMode('scraper');
@@ -49,7 +53,7 @@ export default function App() {
             const result = await response.json();
 
             if (result.success) {
-                setData(result.data);
+                setLoadingStage('analyzing');
 
                 const analysisResponse = await fetch('/api/analyze', {
                     method: 'POST',
@@ -63,6 +67,10 @@ export default function App() {
                 });
 
                 const analysisResult = await analysisResponse.json();
+
+                setLoadingStage('assembling');
+
+                setData(result.data);
                 if (analysisResult.success) {
                     setAnalysis(analysisResult.analysis);
                 }
@@ -77,6 +85,7 @@ export default function App() {
             alert('Terjadi kesalahan saat scraping');
         } finally {
             setLoading(false);
+            setLoadingStage(null);
         }
     };
 
@@ -114,6 +123,7 @@ export default function App() {
 
     const handleSurf = async (query, options) => {
         setLoading(true);
+        setLoadingStage('collecting');
         setCurrentKeyword(query);
         setCurrentMode('surfer');
         setData([]);
@@ -149,6 +159,7 @@ export default function App() {
             const result = await response.json();
 
             if (result.success) {
+                setLoadingStage('assembling');
                 setSurfResults(result);
                 setAnalysis(result.sentiment || null);
                 setAiAnalysis(null);
@@ -161,6 +172,7 @@ export default function App() {
             alert('Terjadi kesalahan saat surfing');
         } finally {
             setLoading(false);
+            setLoadingStage(null);
         }
     };
 
@@ -300,8 +312,20 @@ export default function App() {
             {/* Input */}
             <InputSection onScrape={handleScrape} onSurf={handleSurf} />
 
+            {/* Home content (before scraping) */}
+            {!hasData && (
+                <div className="home-grid">
+                    <div className="home-main">
+                        <HomeContent onQuickSearch={(kw) => handleScrape('news', kw, 10)} />
+                    </div>
+                    <aside className="home-sidebar">
+                        <HomeSidebar />
+                    </aside>
+                </div>
+            )}
+
             {/* Loading */}
-            <LoadingIndicator show={loading} keyword={currentKeyword} />
+            <LoadingIndicator show={loading} keyword={currentKeyword} stage={loadingStage} />
 
             {/* Tabs + panels */}
             {hasData && (

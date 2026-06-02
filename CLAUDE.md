@@ -85,3 +85,9 @@ All under `/api/`:
 
 - `.env` — Database, LLM, Django secret key
 - `DB_ENGINE` — sqlite / postgresql / mysql
+
+## Git Rules
+
+- Push to GitHub every 3 file changes
+- Never use co-author in commit messages
+- Commit message format: short descriptive summary in English
