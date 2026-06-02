@@ -221,6 +221,23 @@ export default function App() {
         const totalLikes = dataItems.reduce((sum, item) => sum + (item.likes || 0), 0);
         const totalComments = dataItems.reduce((sum, item) => sum + (item.comments || 0), 0);
         const totalShares = dataItems.reduce((sum, item) => sum + (item.shares || 0), 0);
+        const totalWords = dataItems.reduce((sum, item) => sum + (item.text ? item.text.split(/\s+/).length : 0), 0);
+
+        const platforms = {};
+        dataItems.forEach(item => {
+            const p = item.platform || 'unknown';
+            platforms[p] = (platforms[p] || 0) + 1;
+        });
+
+        const sources = new Set(dataItems.map(item => item.author || item.source || '').filter(Boolean));
+
+        const sentiments = { positive: 0, negative: 0, neutral: 0 };
+        dataItems.forEach(item => {
+            const s = (item.sentiment || '').toLowerCase();
+            if (s === 'positive' || s === 'positif') sentiments.positive++;
+            else if (s === 'negative' || s === 'negatif') sentiments.negative++;
+            else sentiments.neutral++;
+        });
 
         setStatistics({
             total: dataItems.length,
@@ -230,6 +247,11 @@ export default function App() {
             avgLikes: (totalLikes / dataItems.length).toFixed(1),
             avgComments: (totalComments / dataItems.length).toFixed(1),
             avgShares: (totalShares / dataItems.length).toFixed(1),
+            totalWords,
+            avgWords: Math.round(totalWords / dataItems.length),
+            platforms,
+            uniqueSources: sources.size,
+            sentiments,
         });
     };
 
@@ -401,7 +423,7 @@ export default function App() {
 
                     {/* PANEL: Statistics */}
                     {activeTab === 'statistics' && currentMode === 'scraper' && (
-                        <StatisticsTab statistics={statistics} />
+                        <StatisticsTab statistics={statistics} platform={currentPlatform} />
                     )}
 
                     {/* PANEL: History */}
