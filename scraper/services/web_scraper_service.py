@@ -5,15 +5,7 @@ import logging
 from datetime import datetime, timedelta
 from urllib.parse import quote_plus, urlencode
 
-import httpx
-
 logger = logging.getLogger(__name__)
-
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-}
 
 
 class WebScraperService:
@@ -65,9 +57,11 @@ class WebScraperService:
 
             rss_url = f"https://news.google.com/rss/search?q={urlencode({'': search_query})[1:]}&hl=id&gl=ID&ceid=ID:id"
 
-            with httpx.Client(timeout=15, follow_redirects=True) as client:
-                response = client.get(rss_url, headers=HEADERS)
-                xml_text = response.text
+            from .shared_client import fetch
+            from .rate_limiter import throttle
+            throttle('news.google.com')
+            response = fetch(rss_url)
+            xml_text = response.text
 
             results = []
             items = re.findall(r'<item>(.*?)</item>', xml_text, re.DOTALL)

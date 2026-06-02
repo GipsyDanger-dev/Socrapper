@@ -20,12 +20,27 @@ class SearchEngineService:
     def search(self, query, limit=10):
         results = []
 
-        news_results = self._google_news_search(query, (limit + 1) // 2)
+        # Calculate pages needed (10 results per page max for Google)
+        pages_needed = max(1, (limit + 9) // 10)
+
+        # Fetch from Google News RSS
+        news_limit = (limit + 1) // 2
+        news_results = self._google_news_search(query, news_limit)
         results.extend(news_results)
 
-        web_results = self._google_web_search(query, limit - len(results))
-        results.extend(web_results)
+        # Fetch from Google Web Search with pagination
+        remaining = limit - len(results)
+        if remaining > 0:
+            for page in range(1, pages_needed + 1):
+                if len(results) >= limit:
+                    break
+                page_results = self._google_web_search(query, min(remaining, 10), page=page)
+                results.extend(page_results)
+                remaining = limit - len(results)
+                if page < pages_needed:
+                    time.sleep(random.uniform(1.0, 2.5))
 
+        # Deduplicate by URL
         seen = set()
         unique = []
         for r in results:
@@ -76,10 +91,11 @@ class SearchEngineService:
             logger.error(f"Google News search error: {e}")
             return []
 
-    def _google_web_search(self, query, limit):
+    def _google_web_search(self, query, limit, page=1):
         try:
-            time.sleep(random.uniform(0.5, 2.0))
-            url = f"https://www.google.com/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&num={limit}"
+            time.sleep(random.uniform(0.5, 1.5))
+            start = (page - 1) * 10
+            url = f"https://www.google.com/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&num={min(limit, 10)}&start={start}"
 
             with httpx.Client(timeout=30, follow_redirects=True) as client:
                 response = client.get(url, headers=HEADERS)

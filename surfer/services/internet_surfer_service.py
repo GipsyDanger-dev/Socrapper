@@ -106,11 +106,12 @@ class InternetSurferService:
 
     def deep_surf(self, query, pages=3):
         all_results = []
+        per_query_limit = max(10, pages * 5)
         queries = [query, f"{query} terbaru", f"{query} analisis"]
 
         for q in queries:
             results = self.surf(q, {
-                'search_limit': pages,
+                'search_limit': per_query_limit,
                 'extract_content': True,
                 'analyze_sentiment': False,
             })

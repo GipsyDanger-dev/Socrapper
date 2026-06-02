@@ -5,15 +5,7 @@ import socket
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import httpx
-
 logger = logging.getLogger(__name__)
-
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
-}
 
 NOISE_SELECTORS = [
     'script', 'style', 'nav', 'footer', 'header',
@@ -59,8 +51,10 @@ class ContentExtractorService:
         if not self._is_safe_url(url):
             return self._error_result(url, 'URL not allowed')
         try:
-            with httpx.Client(timeout=30, follow_redirects=True) as client:
-                response = client.get(url, headers=HEADERS)
+            from scraper.services.shared_client import fetch
+            from scraper.services.rate_limiter import throttle
+            throttle(url)
+            response = fetch(url)
 
             if response.status_code != 200:
                 return self._error_result(url, f"HTTP {response.status_code}")
