@@ -434,6 +434,126 @@ body {
   margin-bottom: 18px;
 }
 
+/* Sentiment Gauge */
+.sent-gauge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border-secondary);
+}
+.sent-gauge {
+  flex: 1;
+  position: relative;
+}
+.sent-gauge-track {
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+}
+.sent-gauge-fill {
+  height: 100%;
+  position: absolute;
+}
+.sent-gauge-fill.neg {
+  left: 0;
+  background: var(--color-negative);
+  opacity: 0.6;
+}
+.sent-gauge-fill.neu {
+  background: var(--color-neutral);
+  opacity: 0.4;
+}
+.sent-gauge-fill.pos {
+  background: var(--color-positive);
+  opacity: 0.6;
+}
+.sent-gauge-needle {
+  width: 2px;
+  height: 16px;
+  background: var(--color-text-primary);
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform-origin: bottom center;
+  transition: transform 0.5s ease;
+}
+.sent-gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-faded);
+}
+.sent-gauge-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+}
+.sent-gauge-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+.sent-gauge-num.pos { color: var(--color-positive); }
+.sent-gauge-num.neg { color: var(--color-negative); }
+.sent-gauge-num.neu { color: var(--color-neutral); }
+.sent-gauge-desc {
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-faded);
+  margin-top: 4px;
+}
+
+/* Word Frequency */
+.word-freq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.word-freq-item {
+  display: grid;
+  grid-template-columns: 80px 1fr 30px;
+  align-items: center;
+  gap: 8px;
+}
+.word-freq-word {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.word-freq-bar {
+  height: 6px;
+  background: var(--color-border-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.word-freq-fill {
+  height: 100%;
+  background: var(--color-text-primary);
+  opacity: 0.6;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.word-freq-count {
+  font-size: 10px;
+  color: var(--color-text-faded);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Pull Quote */
 .pq {
   border-left: 3px solid var(--color-text-primary);

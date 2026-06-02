@@ -62,11 +62,21 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
     const platforms = Object.entries(platformMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const maxPl = platforms[0]?.[1] || 1;
 
-    // Keyword detection from details
-    const details = analysis.results || analysis.details || [];
-    const allText = details.map(d => d.text?.toLowerCase() || '').join(' ');
-    const posKw = ['bagus', 'mantap', 'great', 'amazing', 'inovatif', 'helpful', 'keren', 'mudah', 'positif', 'berkembang'].filter(k => allText.includes(k));
-    const negKw = ['kurang', 'kendala', 'gagal', 'susah', 'mengecewakan', 'frustrasi', 'buruk', 'negatif'].filter(k => allText.includes(k));
+    // Word frequency analysis
+    const wordFreq = {};
+    const stopWords = ['yang', 'dan', 'di', 'ini', 'itu', 'dengan', 'untuk', 'pada', 'ke', 'dari', 'adalah', 'akan', 'oleh', 'juga', 'sudah', 'ada', 'bisa', 'tidak', 'belum', 'lebih', 'sangat', 'paling', 'atau', 'namun', 'tetapi', 'karena', 'jika', 'maka', 'serta', 'dalam', 'hal', 'bagi', 'seperti', 'tentang', 'the', 'and', 'is', 'in', 'to', 'of', 'a', 'for', 'that', 'with', 'on', 'at', 'by', 'from', 'it', 'as', 'an', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'shall', 'can'];
+    if (data) {
+        data.forEach(item => {
+            const text = (item.text || '').toLowerCase().replace(/[^a-z0-9\s]/g, '');
+            const words = text.split(/\s+/).filter(w => w.length > 3 && !stopWords.includes(w));
+            words.forEach(w => { wordFreq[w] = (wordFreq[w] || 0) + 1; });
+        });
+    }
+    const topWords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    const maxWordFreq = topWords[0]?.[1] || 1;
+
+    // Sentiment gauge angle (-90 to +90 degrees)
+    const gaugeAngle = tot > 0 ? ((posP - negP) / 100) * 90 : 0;
 
     return (
         <div className="panel on">
@@ -74,6 +84,32 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
                 <div className="sm">
                     <div className="bnum">{tot}</div>
                     <div className="blbl">total post dikumpulkan</div>
+
+                    {/* Sentiment Gauge */}
+                    <div className="sent-gauge-wrap">
+                        <div className="sent-gauge">
+                            <div className="sent-gauge-track">
+                                <div className="sent-gauge-fill neg" style={{ width: '50%' }} />
+                                <div className="sent-gauge-fill neu" style={{ width: '20%', left: '40%' }} />
+                                <div className="sent-gauge-fill pos" style={{ width: '40%', left: '60%' }} />
+                            </div>
+                            <div
+                                className="sent-gauge-needle"
+                                style={{ transform: `rotate(${gaugeAngle}deg)` }}
+                            />
+                            <div className="sent-gauge-labels">
+                                <span>negatif</span>
+                                <span>netral</span>
+                                <span>positif</span>
+                            </div>
+                        </div>
+                        <div className="sent-gauge-value">
+                            <span className={`sent-gauge-num ${overallSentiment === 'positive' ? 'pos' : overallSentiment === 'negative' ? 'neg' : 'neu'}`}>
+                                {overallSentiment === 'positive' ? '+' : overallSentiment === 'negative' ? '-' : ''}{Math.abs(posP - negP)}%
+                            </span>
+                            <span className="sent-gauge-desc">skor sentimen</span>
+                        </div>
+                    </div>
 
                     {/* Overall Sentiment Summary */}
                     <div className="pq">
@@ -136,6 +172,27 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
                                             {index + 1}
                                         </div>
                                         <div className="post-text" style={{ fontSize: '12px' }}>{insight}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Word Frequency */}
+                    {topWords.length > 0 && (
+                        <div style={{ marginBottom: '18px' }}>
+                            <p className="srule">kata kunci teratas</p>
+                            <div className="word-freq-list">
+                                {topWords.map(([word, count]) => (
+                                    <div key={word} className="word-freq-item">
+                                        <span className="word-freq-word">{word}</span>
+                                        <div className="word-freq-bar">
+                                            <div
+                                                className="word-freq-fill"
+                                                style={{ width: `${Math.round(count / maxWordFreq * 100)}%` }}
+                                            />
+                                        </div>
+                                        <span className="word-freq-count">{count}</span>
                                     </div>
                                 ))}
                             </div>

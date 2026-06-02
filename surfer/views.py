@@ -19,16 +19,16 @@ def surf(request):
     if not query:
         return Response({'success': False, 'error': 'query is required'}, status=400)
 
-    search_limit = request.data.get('search_limit', 5)
+    search_limit = request.data.get('search_limit', 15)
     extract_content = request.data.get('extract_content', True)
     analyze_sentiment = request.data.get('analyze_sentiment', True)
 
     try:
         search_limit = int(search_limit)
-        if search_limit < 1 or search_limit > 10:
-            search_limit = 5
+        if search_limit < 1 or search_limit > 50:
+            search_limit = 15
     except (TypeError, ValueError):
-        search_limit = 5
+        search_limit = 15
 
     results = surfer_service.surf(query, {
         'search_limit': search_limit,
@@ -48,13 +48,13 @@ def quick_surf(request):
     if not query:
         return Response({'success': False, 'error': 'query is required'}, status=400)
 
-    limit = request.data.get('limit', 5)
+    limit = request.data.get('limit', 15)
     try:
         limit = int(limit)
-        if limit < 1 or limit > 20:
-            limit = 5
+        if limit < 1 or limit > 50:
+            limit = 15
     except (TypeError, ValueError):
-        limit = 5
+        limit = 15
 
     results = surfer_service.quick_surf(query, limit)
     return Response(results)
