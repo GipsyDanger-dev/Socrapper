@@ -58,7 +58,9 @@ class SearchEngineService:
 
                 article_url = self._extract_article_url(description) or link
 
-                clean_snippet = self._strip_html(description)
+                # Extract only the first article from description (RSS bundles multiple)
+                first_article = self._extract_first_article(description)
+                clean_snippet = self._strip_html(first_article)
                 clean_snippet = re.sub(r'https?://news\.google\.com[^\s]*', '', clean_snippet)
                 clean_snippet = re.sub(r'\s+', ' ', clean_snippet).strip()
 
@@ -161,3 +163,17 @@ class SearchEngineService:
         clean = re.sub(r'<[^>]*>', ' ', clean)
         clean = re.sub(r'\s+', ' ', clean).strip()
         return clean
+
+    def _extract_first_article(self, html_desc):
+        """Extract the first article from a Google News RSS description that bundles multiple."""
+        if not html_desc:
+            return ''
+        import html as html_mod
+        # Decode entities first (tags may be &lt;li&gt; encoded)
+        decoded = html_mod.unescape(html_mod.unescape(html_desc))
+        # Try to get content of first <li>
+        m = re.search(r'<li[^>]*>(.*?)</li>', decoded, re.DOTALL)
+        if m:
+            return m.group(1)
+        # No <li>, return as-is (single article)
+        return html_desc

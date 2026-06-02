@@ -85,8 +85,9 @@ class WebScraperService:
                 # Extract actual article URL from description
                 article_url = self._extract_article_url(description) or link
 
-                # Clean snippet — strip all HTML tags and decode entities
-                clean_snippet = self._strip_html(description)
+                # Clean snippet — extract first article only, then strip HTML
+                first_article = self._extract_first_article(description)
+                clean_snippet = self._strip_html(first_article)
                 clean_snippet = re.sub(r'https?://news\.google\.com[^\s]*', '', clean_snippet)
                 clean_snippet = re.sub(r'\s+', ' ', clean_snippet).strip()
 
@@ -149,6 +150,17 @@ class WebScraperService:
         # Collapse whitespace
         clean = re.sub(r'\s+', ' ', clean).strip()
         return clean
+
+    def _extract_first_article(self, html_desc):
+        """Extract the first article from a Google News RSS description that bundles multiple."""
+        if not html_desc:
+            return ''
+        import html as html_mod
+        decoded = html_mod.unescape(html_mod.unescape(html_desc))
+        m = re.search(r'<li[^>]*>(.*?)</li>', decoded, re.DOTALL)
+        if m:
+            return m.group(1)
+        return html_desc
 
     def get_platforms(self):
         return [
