@@ -85,9 +85,8 @@ class WebScraperService:
                 # Extract actual article URL from description
                 article_url = self._extract_article_url(description) or link
 
-                # Clean snippet — extract first article only, then strip HTML
-                first_article = self._extract_first_article(description)
-                clean_snippet = self._strip_html(first_article)
+                # Parse bundled articles into clean format
+                clean_snippet = self._parse_rss_description(description)
                 clean_snippet = re.sub(r'https?://news\.google\.com[^\s]*', '', clean_snippet)
                 clean_snippet = re.sub(r'\s+', ' ', clean_snippet).strip()
 
@@ -151,16 +150,29 @@ class WebScraperService:
         clean = re.sub(r'\s+', ' ', clean).strip()
         return clean
 
-    def _extract_first_article(self, html_desc):
-        """Extract the first article from a Google News RSS description that bundles multiple."""
+    def _parse_rss_description(self, html_desc):
+        """Parse Google News RSS description into clean 'Title - Source' lines."""
         if not html_desc:
             return ''
         import html as html_mod
         decoded = html_mod.unescape(html_mod.unescape(html_desc))
-        m = re.search(r'<li[^>]*>(.*?)</li>', decoded, re.DOTALL)
-        if m:
-            return m.group(1)
-        return html_desc
+
+        items = re.findall(r'<li[^>]*>(.*?)</li>', decoded, re.DOTALL)
+        if not items:
+            clean = re.sub(r'<[^>]*>', ' ', decoded)
+            clean = re.sub(r'\s+', ' ', clean).strip()
+            return clean
+
+        articles = []
+        for item_html in items:
+            title_m = re.search(r'<a[^>]*>(.*?)</a>', item_html, re.DOTALL)
+            title = re.sub(r'<[^>]*>', '', title_m.group(1)).strip() if title_m else ''
+            source_m = re.search(r'<font[^>]*>(.*?)</font>', item_html, re.DOTALL)
+            source = re.sub(r'<[^>]*>', '', source_m.group(1)).strip() if source_m else ''
+            if title:
+                articles.append(f"{title} - {source}" if source else title)
+
+        return '\n'.join(articles)
 
     def get_platforms(self):
         return [

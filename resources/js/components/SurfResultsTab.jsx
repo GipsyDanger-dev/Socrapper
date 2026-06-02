@@ -146,8 +146,12 @@ export default function SurfResultsTab({ results }) {
                         </div>
 
                         {(item.snippet || item.description) && (
-                            <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: '1.5' }}>
-                                {cleanText(item.snippet || item.description)}
+                            <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--color-text-secondary)', lineHeight: '1.6' }}>
+                                {cleanText(item.snippet || item.description).split('\n').filter(Boolean).map((line, i) => (
+                                    <div key={i} style={{ marginBottom: i < cleanText(item.snippet || item.description).split('\n').filter(Boolean).length - 1 ? '4px' : 0, paddingLeft: '10px', borderLeft: '2px solid var(--color-border-secondary)' }}>
+                                        {line}
+                                    </div>
+                                ))}
                             </div>
                         )}
 

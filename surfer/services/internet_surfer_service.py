@@ -43,8 +43,10 @@ class InternetSurferService:
         clean = html_mod.unescape(text)
         clean = html_mod.unescape(clean)
         clean = re.sub(r'<[^>]*>', ' ', clean)
-        clean = re.sub(r'\s+', ' ', clean).strip()
-        return clean
+        # Collapse horizontal whitespace but preserve newlines
+        clean = re.sub(r'[^\S\n]+', ' ', clean)
+        clean = re.sub(r'\n\s*\n', '\n', clean)
+        return clean.strip()
 
     def surf(self, query, options=None):
         options = options or {}

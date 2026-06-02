@@ -58,11 +58,8 @@ class SearchEngineService:
 
                 article_url = self._extract_article_url(description) or link
 
-                # Extract only the first article from description (RSS bundles multiple)
-                first_article = self._extract_first_article(description)
-                clean_snippet = self._strip_html(first_article)
-                clean_snippet = re.sub(r'https?://news\.google\.com[^\s]*', '', clean_snippet)
-                clean_snippet = re.sub(r'\s+', ' ', clean_snippet).strip()
+                # Parse bundled articles from description into clean format
+                clean_snippet = self._parse_rss_description(description)
 
                 if title and link:
                     results.append({
@@ -164,16 +161,30 @@ class SearchEngineService:
         clean = re.sub(r'\s+', ' ', clean).strip()
         return clean
 
-    def _extract_first_article(self, html_desc):
-        """Extract the first article from a Google News RSS description that bundles multiple."""
+    def _parse_rss_description(self, html_desc):
+        """Parse Google News RSS description into clean 'Title - Source' lines."""
         if not html_desc:
             return ''
         import html as html_mod
-        # Decode entities first (tags may be &lt;li&gt; encoded)
         decoded = html_mod.unescape(html_mod.unescape(html_desc))
-        # Try to get content of first <li>
-        m = re.search(r'<li[^>]*>(.*?)</li>', decoded, re.DOTALL)
-        if m:
-            return m.group(1)
-        # No <li>, return as-is (single article)
-        return html_desc
+
+        # Extract all <li> items
+        items = re.findall(r'<li[^>]*>(.*?)</li>', decoded, re.DOTALL)
+        if not items:
+            # Single article (no <li>), just strip and return
+            clean = re.sub(r'<[^>]*>', ' ', decoded)
+            clean = re.sub(r'\s+', ' ', clean).strip()
+            return clean
+
+        articles = []
+        for item_html in items:
+            # Extract title from <a> tag
+            title_m = re.search(r'<a[^>]*>(.*?)</a>', item_html, re.DOTALL)
+            title = re.sub(r'<[^>]*>', '', title_m.group(1)).strip() if title_m else ''
+            # Extract source from <font> tag
+            source_m = re.search(r'<font[^>]*>(.*?)</font>', item_html, re.DOTALL)
+            source = re.sub(r'<[^>]*>', '', source_m.group(1)).strip() if source_m else ''
+            if title:
+                articles.append(f"{title} - {source}" if source else title)
+
+        return '\n'.join(articles)

@@ -65,7 +65,7 @@ export default function RawDataTab({ data, onExport }) {
                         return (
                             <tr key={index}>
                                 <td>
-                                    <div className="raw-content">{cleanHtml(item.text)}</div>
+                                    <div className="raw-content" style={{ whiteSpace: 'pre-line' }}>{cleanHtml(item.text)}</div>
                                     <div className="raw-date">
                                         {item.timestamp
                                             ? new Date(item.timestamp).toLocaleString('id-ID')
