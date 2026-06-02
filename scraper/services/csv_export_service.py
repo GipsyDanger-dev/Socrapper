@@ -6,13 +6,29 @@ from django.conf import settings
 
 class CsvExportService:
     @staticmethod
+    def _sanitize_filename(filename, export_dir):
+        """Sanitize filename to prevent path traversal."""
+        if not filename:
+            return None
+        # Strip path separators and null bytes
+        filename = os.path.basename(filename).replace('\x00', '')
+        # Reject empty, hidden, or non-CSV
+        if not filename or filename.startswith('.') or not filename.endswith('.csv'):
+            return None
+        # Verify resolved path stays within export_dir
+        filepath = os.path.realpath(os.path.join(export_dir, filename))
+        if not filepath.startswith(os.path.realpath(export_dir)):
+            return None
+        return filename
+
+    @staticmethod
     def export_scraping_data(data, filename=None):
         if not data:
             return ''
 
-        filename = filename or f"scraping_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         export_dir = getattr(settings, 'EXPORTS_DIR', os.path.join(settings.BASE_DIR, 'exports'))
         os.makedirs(export_dir, exist_ok=True)
+        filename = CsvExportService._sanitize_filename(filename, export_dir) or f"scraping_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         filepath = os.path.join(export_dir, filename)
 
         with open(filepath, 'w', newline='', encoding='utf-8') as f:
@@ -38,9 +54,9 @@ class CsvExportService:
         if not data:
             return ''
 
-        filename = filename or f"analysis_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         export_dir = getattr(settings, 'EXPORTS_DIR', os.path.join(settings.BASE_DIR, 'exports'))
         os.makedirs(export_dir, exist_ok=True)
+        filename = CsvExportService._sanitize_filename(filename, export_dir) or f"analysis_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         filepath = os.path.join(export_dir, filename)
 
         with open(filepath, 'w', newline='', encoding='utf-8') as f:
@@ -76,9 +92,9 @@ class CsvExportService:
 
     @staticmethod
     def export_statistics(statistics, filename=None):
-        filename = filename or f"statistics_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         export_dir = getattr(settings, 'EXPORTS_DIR', os.path.join(settings.BASE_DIR, 'exports'))
         os.makedirs(export_dir, exist_ok=True)
+        filename = CsvExportService._sanitize_filename(filename, export_dir) or f"statistics_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         filepath = os.path.join(export_dir, filename)
 
         with open(filepath, 'w', newline='', encoding='utf-8') as f:
@@ -121,20 +137,22 @@ class CsvExportService:
     @staticmethod
     def get_filepath(filename):
         export_dir = getattr(settings, 'EXPORTS_DIR', os.path.join(settings.BASE_DIR, 'exports'))
-        filepath = os.path.join(export_dir, filename)
-
+        safe_name = CsvExportService._sanitize_filename(filename, export_dir)
+        if not safe_name:
+            raise FileNotFoundError('Invalid filename')
+        filepath = os.path.join(export_dir, safe_name)
         if not os.path.exists(filepath):
             raise FileNotFoundError('File not found')
-
         return filepath
 
     @staticmethod
     def delete_file(filename):
         export_dir = getattr(settings, 'EXPORTS_DIR', os.path.join(settings.BASE_DIR, 'exports'))
-        filepath = os.path.join(export_dir, filename)
-
+        safe_name = CsvExportService._sanitize_filename(filename, export_dir)
+        if not safe_name:
+            return False
+        filepath = os.path.join(export_dir, safe_name)
         if not os.path.exists(filepath):
             return False
-
         os.remove(filepath)
         return True

@@ -79,7 +79,7 @@ def scrape(request):
         })
     except Exception as e:
         logger.error(f"Scraping error: {e}")
-        return Response({'success': False, 'error': str(e)}, status=500)
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
 
 
 @api_view(['POST'])
@@ -93,7 +93,7 @@ def analyze(request):
         return Response({'success': True, 'analysis': analysis})
     except Exception as e:
         logger.error(f"Sentiment analysis error: {e}")
-        return Response({'success': False, 'error': str(e)}, status=500)
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
 
 
 @api_view(['GET'])
@@ -144,7 +144,7 @@ def export_data(request):
         )
     except Exception as e:
         logger.error(f"Export error: {e}")
-        return Response({'success': False, 'error': str(e)}, status=500)
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
 
 
 @api_view(['GET'])
@@ -154,7 +154,7 @@ def get_exports(request):
         return Response({'success': True, 'exports': exports})
     except Exception as e:
         logger.error(f"List exports error: {e}")
-        return Response({'success': False, 'error': str(e)}, status=500)
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
 
 
 @api_view(['GET'])
@@ -171,7 +171,7 @@ def download_export(request, filename):
         return Response({'success': False, 'error': 'File not found'}, status=404)
     except Exception as e:
         logger.error(f"Download export error: {e}")
-        return Response({'success': False, 'error': str(e)}, status=500)
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
 
 
 @api_view(['DELETE'])
@@ -183,7 +183,7 @@ def delete_export(request, filename):
         return Response({'success': True, 'message': 'Export file deleted'})
     except Exception as e:
         logger.error(f"Delete export error: {e}")
-        return Response({'success': False, 'error': str(e)}, status=500)
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
 
 
 @api_view(['GET'])

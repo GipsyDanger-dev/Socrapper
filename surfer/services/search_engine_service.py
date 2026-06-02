@@ -39,7 +39,7 @@ class SearchEngineService:
     def _google_news_search(self, query, limit):
         try:
             url = f"https://news.google.com/rss/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&ceid=ID:id"
-            with httpx.Client(timeout=30, verify=False, follow_redirects=True) as client:
+            with httpx.Client(timeout=30, follow_redirects=True) as client:
                 response = client.get(url, headers=HEADERS)
                 xml_text = response.text
 
@@ -81,7 +81,7 @@ class SearchEngineService:
             time.sleep(random.uniform(0.5, 2.0))
             url = f"https://www.google.com/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&num={limit}"
 
-            with httpx.Client(timeout=30, verify=False, follow_redirects=True) as client:
+            with httpx.Client(timeout=30, follow_redirects=True) as client:
                 response = client.get(url, headers=HEADERS)
                 html = response.text
 

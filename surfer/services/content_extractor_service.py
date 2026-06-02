@@ -1,5 +1,7 @@
 import re
 import logging
+import ipaddress
+import socket
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -24,9 +26,40 @@ NOISE_SELECTORS = [
 
 
 class ContentExtractorService:
-    def extract(self, url):
+    @staticmethod
+    def _is_safe_url(url):
+        """Block internal/private IPs to prevent SSRF."""
         try:
-            with httpx.Client(timeout=30, verify=False, follow_redirects=True) as client:
+            parsed = urlparse(url)
+            if parsed.scheme not in ('http', 'https'):
+                return False
+            hostname = parsed.hostname
+            if not hostname:
+                return False
+            # Block localhost
+            if hostname in ('localhost', '127.0.0.1', '::1', '0.0.0.0'):
+                return False
+            # Resolve and check IP
+            try:
+                addr = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC)
+                for family, _, _, _, sockaddr in addr:
+                    ip = ipaddress.ip_address(sockaddr[0])
+                    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                        return False
+            except (socket.gaierror, ValueError):
+                pass
+            # Block cloud metadata
+            if '169.254.169.254' in hostname or 'metadata.google' in hostname:
+                return False
+            return True
+        except Exception:
+            return False
+
+    def extract(self, url):
+        if not self._is_safe_url(url):
+            return self._error_result(url, 'URL not allowed')
+        try:
+            with httpx.Client(timeout=30, follow_redirects=True) as client:
                 response = client.get(url, headers=HEADERS)
 
             if response.status_code != 200:

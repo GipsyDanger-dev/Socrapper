@@ -65,7 +65,7 @@ class WebScraperService:
 
             rss_url = f"https://news.google.com/rss/search?q={urlencode({'': search_query})[1:]}&hl=id&gl=ID&ceid=ID:id"
 
-            with httpx.Client(timeout=15, verify=False, follow_redirects=True) as client:
+            with httpx.Client(timeout=15, follow_redirects=True) as client:
                 response = client.get(rss_url, headers=HEADERS)
                 xml_text = response.text
 
@@ -100,9 +100,9 @@ class WebScraperService:
                         'author': source or self._extract_domain(article_url),
                         'text': f"{clean_title}. {clean_snippet}" if clean_snippet else clean_title,
                         'timestamp': self._parse_date(pub_date),
-                        'likes': random.randint(0, 500),
-                        'comments': random.randint(0, 100),
-                        'shares': random.randint(0, 200),
+                        'likes': 0,
+                        'comments': 0,
+                        'shares': 0,
                         'url': article_url,
                     })
 
@@ -228,9 +228,9 @@ class WebScraperService:
                 'author': author,
                 'text': text,
                 'timestamp': (datetime.now() - timedelta(hours=random.randint(1, 48))).isoformat(),
-                'likes': random.randint(0, 500),
-                'comments': random.randint(0, 100),
-                'shares': random.randint(0, 200),
+                'likes': 0,
+                'comments': 0,
+                'shares': 0,
                 'url': f"https://twitter.com/i/status/{random.randint(100000, 999999)}",
             })
         return results
@@ -249,7 +249,7 @@ class WebScraperService:
                 try:
                     score = int(re.sub(r'[^\d-]', '', score_el[0].text))
                 except ValueError:
-                    score = random.randint(1, 500)
+                    score = 0
             results.append({
                 'id': hashlib.md5(f"reddit-{i}-{query}".encode()).hexdigest()[:12],
                 'platform': 'reddit',
@@ -257,7 +257,7 @@ class WebScraperService:
                 'text': title,
                 'timestamp': (datetime.now() - timedelta(hours=random.randint(1, 72))).isoformat(),
                 'likes': score,
-                'comments': random.randint(0, 300),
+                'comments': 0,
                 'shares': 0,
                 'url': f"https://reddit.com/comments/{random.randint(100000, 999999)}",
             })
@@ -279,8 +279,8 @@ class WebScraperService:
                 'text': title,
                 'timestamp': (datetime.now() - timedelta(hours=random.randint(1, 24))).isoformat(),
                 'likes': 0,
-                'comments': random.randint(0, 50),
-                'shares': random.randint(0, 100),
+                'comments': 0,
+                'shares': 0,
                 'url': href if href.startswith('http') else f"https://news.google.com/articles/{random.randint(100000, 999999)}",
             })
         return results
@@ -297,7 +297,7 @@ class WebScraperService:
                 try:
                     votes = int(votes_el[0].text.strip())
                 except ValueError:
-                    votes = random.randint(0, 100)
+                    votes = 0
             results.append({
                 'id': hashlib.md5(f"stackoverflow-{i}-{query}".encode()).hexdigest()[:12],
                 'platform': 'stackoverflow',
@@ -305,7 +305,7 @@ class WebScraperService:
                 'text': title,
                 'timestamp': (datetime.now() - timedelta(days=random.randint(1, 30))).isoformat(),
                 'likes': votes,
-                'comments': random.randint(0, 10),
+                'comments': 0,
                 'shares': 0,
                 'url': f"https://stackoverflow.com/questions/{random.randint(100000, 999999)}",
             })
@@ -325,8 +325,8 @@ class WebScraperService:
                 'author': title.split('/')[0] if '/' in title else f"user{i}",
                 'text': f"{title}: {desc}" if desc else title,
                 'timestamp': (datetime.now() - timedelta(days=random.randint(1, 60))).isoformat(),
-                'likes': random.randint(0, 5000),
-                'comments': random.randint(0, 100),
+                'likes': 0,
+                'comments': 0,
                 'shares': 0,
                 'url': f"https://github.com/{title}" if '/' in title else f"https://github.com/search?q={query}",
             })
@@ -346,9 +346,9 @@ class WebScraperService:
                 'author': channel,
                 'text': title,
                 'timestamp': (datetime.now() - timedelta(days=random.randint(1, 14))).isoformat(),
-                'likes': random.randint(0, 10000),
-                'comments': random.randint(0, 2000),
-                'shares': random.randint(0, 500),
+                'likes': 0,
+                'comments': 0,
+                'shares': 0,
                 'url': f"https://youtube.com/watch?v={hashlib.md5(f'{i}{query}'.encode()).hexdigest()[:11]}",
             })
         return results
@@ -395,9 +395,9 @@ class WebScraperService:
                 'author': f"{platform}_user_{seed[:6]}",
                 'text': f"[{platform.title()}] Discussion about '{query}' — post #{i + 1} with relevant content and community engagement.",
                 'timestamp': (datetime.now() - timedelta(hours=random.randint(1, 48))).isoformat(),
-                'likes': random.randint(0, 500),
-                'comments': random.randint(0, 100),
-                'shares': random.randint(0, 200),
+                'likes': 0,
+                'comments': 0,
+                'shares': 0,
                 'url': f"https://{platform}.com/post/{seed[:8]}",
             })
         return results

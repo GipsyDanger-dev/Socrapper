@@ -89,7 +89,7 @@ def extract_url(request):
         return Response(result)
     except Exception as e:
         logger.error(f"Extract URL error: {e}")
-        return Response({'success': False, 'error': str(e)}, status=500)
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
 
 
 @api_view(['POST'])
@@ -124,4 +124,4 @@ def ai_analyze(request):
         })
     except Exception as e:
         logger.error(f"AI analyze error: {e}")
-        return Response({'success': False, 'error': str(e)}, status=500)
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
