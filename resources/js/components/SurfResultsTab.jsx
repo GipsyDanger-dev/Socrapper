@@ -183,7 +183,13 @@ export default function SurfResultsTab({ results }) {
                 </span>
               </div>
               <div className="post-by" style={{ marginTop: "4px" }}>
-                {item.source && <span className="plat-tag">{item.source}</span>}
+                {item.source && item.url ? (
+                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="plat-tag plat-tag-link">
+                    {item.source}
+                  </a>
+                ) : item.source ? (
+                  <span className="plat-tag">{item.source}</span>
+                ) : null}
                 {item.word_count > 0 && (
                   <span style={{ marginLeft: "6px" }}>
                     {item.word_count} kata
@@ -272,15 +278,35 @@ export default function SurfResultsTab({ results }) {
                 <div
                   style={{
                     marginTop: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
                     fontSize: "9px",
+                  }}
+                >
+                  <span style={{
                     color: item.extraction_success
                       ? "var(--color-positive)"
                       : "var(--color-text-faded)",
-                  }}
-                >
-                  {item.extraction_success
-                    ? "✓ konten berhasil di-extract"
-                    : "⚠ hanya snippet tersedia"}
+                  }}>
+                    {item.extraction_success
+                      ? "✓ konten berhasil di-extract"
+                      : "⚠ hanya snippet tersedia"}
+                  </span>
+                  {item.url && (
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: "var(--color-text-secondary)",
+                        textDecoration: "underline",
+                        textUnderlineOffset: "2px",
+                      }}
+                    >
+                      buka sumber →
+                    </a>
+                  )}
                 </div>
               </div>
             )}

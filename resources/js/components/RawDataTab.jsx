@@ -72,6 +72,16 @@ export default function RawDataTab({ data, onExport }) {
                                             : item.date || ''
                                         }
                                     </div>
+                                    {item.url && (
+                                        <a
+                                            href={item.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="raw-source-link"
+                                        >
+                                            buka sumber →
+                                        </a>
+                                    )}
                                 </td>
                                 <td><span className="plat-tag">{item.platform}</span></td>
                                 <td>

@@ -89,5 +89,5 @@ All under `/api/`:
 ## Git Rules
 
 - Push to GitHub every 3 file changes
-- Never use co-author in commit messages
+- Never use co-author
 - Commit message format: short descriptive summary in English
