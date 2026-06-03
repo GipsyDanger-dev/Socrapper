@@ -1346,10 +1346,11 @@ a.plat-tag-link:hover {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
+  align-items: start;
 }
 
 .home-step {
-  padding: 12px 20px 12px 0;
+  padding: 12px 24px;
   border-right: 0.5px solid var(--color-border-secondary);
 }
 
@@ -1360,11 +1361,11 @@ a.plat-tag-link:hover {
 
 .home-step-num {
   font-family: 'Playfair Display', serif;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--color-text-faded);
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   line-height: 1;
 }
 
@@ -1467,7 +1468,7 @@ a.plat-tag-link:hover {
   }
   .home-step {
     border-right: none;
-    padding-right: 0;
+    padding: 12px 0;
     border-bottom: 0.5px solid var(--color-border-secondary);
     padding-bottom: 12px;
     margin-bottom: 12px;
