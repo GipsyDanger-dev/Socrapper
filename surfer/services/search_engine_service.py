@@ -51,6 +51,19 @@ class SearchEngineService:
 
         return unique[:limit]
 
+    def _resolve_google_news_url(self, url):
+        """Decode Google News URL to get the actual article URL."""
+        if not url or 'news.google.com' not in url:
+            return url
+        try:
+            from googlenewsdecoder import new_decoderv1
+            result = new_decoderv1(url)
+            if result.get('status') and result.get('decoded_url'):
+                return result['decoded_url']
+        except Exception as e:
+            logger.debug(f"Google News URL decode failed: {e}")
+        return url
+
     def _google_news_search(self, query, limit):
         try:
             url = f"https://news.google.com/rss/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&ceid=ID:id"
@@ -72,6 +85,10 @@ class SearchEngineService:
                 description = self._extract_xml_tag(item, 'description')
 
                 article_url = self._extract_article_url(description) or link
+
+                # Resolve Google News redirect to get actual article URL
+                if 'news.google.com' in article_url:
+                    article_url = self._resolve_google_news_url(article_url)
 
                 # Parse bundled articles from description into clean format
                 clean_snippet = self._parse_rss_description(description)

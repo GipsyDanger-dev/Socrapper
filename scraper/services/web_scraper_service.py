@@ -79,6 +79,10 @@ class WebScraperService:
                 # Extract actual article URL from description
                 article_url = self._extract_article_url(description) or link
 
+                # Decode Google News URL to get actual article URL
+                if 'news.google.com' in article_url:
+                    article_url = self._decode_google_news_url(article_url)
+
                 # Parse bundled articles into clean format
                 clean_snippet = self._parse_rss_description(description)
                 clean_snippet = re.sub(r'https?://news\.google\.com[^\s]*', '', clean_snippet)
@@ -119,6 +123,19 @@ class WebScraperService:
             if 'news.google.com' not in url and url.startswith('http'):
                 return url
         return ''
+
+    def _decode_google_news_url(self, url):
+        """Decode Google News URL to get the actual article URL."""
+        if not url or 'news.google.com' not in url:
+            return url
+        try:
+            from googlenewsdecoder import new_decoderv1
+            result = new_decoderv1(url)
+            if result.get('status') and result.get('decoded_url'):
+                return result['decoded_url']
+        except Exception as e:
+            logger.debug(f"Google News URL decode failed: {e}")
+        return url
 
     def _parse_date(self, date_str):
         if not date_str:
