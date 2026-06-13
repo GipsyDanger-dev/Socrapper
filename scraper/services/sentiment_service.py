@@ -130,7 +130,7 @@ Jangan tambahkan teks lain di luar JSON.'''
             'positive': 0,
             'negative': 0,
             'neutral': 0,
-            'details': [],
+            'results': [],
         }
 
         if not texts:
@@ -142,7 +142,7 @@ Jangan tambahkan teks lain di luar JSON.'''
             confidence = self._calculate_confidence(text, sentiment)
 
             analysis[sentiment] += 1
-            analysis['details'].append({
+            analysis['results'].append({
                 'text': text,
                 'sentiment': sentiment,
                 'confidence': round(confidence, 2),
