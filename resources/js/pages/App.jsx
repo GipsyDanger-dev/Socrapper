@@ -9,8 +9,10 @@ import AiAnalysisCard from '../components/AiAnalysisCard';
 import LoadingIndicator from '../components/LoadingIndicator';
 import HomeContent from '../components/HomeContent';
 import HomeSidebar from '../components/HomeSidebar';
+import SocrapperLoader from '../components/SocrapperLoader';
 
 export default function App() {
+    const [loaded, setLoaded] = useState(false);
     const [activeTab, setActiveTab] = useState('raw-data');
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState([]);
@@ -302,6 +304,10 @@ export default function App() {
     };
 
     const hasData = data.length > 0 || surfResults;
+
+    if (!loaded) {
+        return <SocrapperLoader onDone={() => setLoaded(true)} />;
+    }
 
     return (
         <div className="root">
