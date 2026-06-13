@@ -95,21 +95,11 @@ export default function App() {
             });
 
             if (result.success) {
-                setLoadingStage('analyzing');
-
-                const analysisResult = await fetchJSON('/api/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ texts: result.data.map(item => item.text) }),
-                    timeout: 60000,
-                });
-
                 setLoadingStage('assembling');
 
+                // Data already has sentiment merged from server
                 setData(result.data);
-                if (analysisResult.success) {
-                    setAnalysis(analysisResult.analysis);
-                }
+                setAnalysis(result.analysis || null);
 
                 calculateStatistics(result.data);
                 setActiveTab('sentiment');
