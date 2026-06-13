@@ -1804,3 +1804,440 @@ a.plat-tag-link:hover {
   letter-spacing: 4px;
   padding: 8px 0;
 }
+
+/* ==================== MOBILE RESPONSIVE ==================== */
+
+/* Tablet: 768px - 1024px */
+@media (max-width: 1024px) {
+  .root {
+    padding: 0 24px 80px;
+  }
+
+  .masthead-title, .logo {
+    font-size: 42px;
+    letter-spacing: -2px;
+  }
+
+  .inp-sec {
+    padding: 16px 24px;
+  }
+
+  .ib {
+    padding: 0 24px;
+  }
+
+  .container {
+    padding: 0 24px;
+  }
+
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-main {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 0.5px solid var(--color-border-secondary);
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+  }
+
+  .home-sidebar {
+    padding-left: 0;
+  }
+}
+
+/* Mobile: max 640px */
+@media (max-width: 640px) {
+  .root {
+    padding: 0 16px 60px;
+  }
+
+  /* Masthead */
+  .masthead, .mh {
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 0 10px;
+  }
+
+  .masthead-title, .logo {
+    font-size: 32px;
+    letter-spacing: -1px;
+  }
+
+  .masthead-meta, .mh-meta {
+    text-align: left;
+    font-size: 9px;
+  }
+
+  .tag {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+  }
+
+  /* Issue Bar */
+  .ib {
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .it {
+    font-size: 9px;
+  }
+
+  /* Input Section */
+  .inp-sec {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+  }
+
+  .sr {
+    flex-direction: column;
+  }
+
+  .sr input[type="text"] {
+    font-size: 16px;
+    padding: 10px 12px;
+  }
+
+  .sr input[type="number"] {
+    width: 100%;
+    padding: 8px 12px;
+  }
+
+  .sr button {
+    padding: 10px 16px;
+    font-size: 11px;
+  }
+
+  /* Platform buttons */
+  .plats {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .plat {
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+
+  /* Mode buttons */
+  .mode-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .mode-btn {
+    font-size: 10px;
+    padding: 6px 12px;
+  }
+
+  /* Body Grid */
+  .body-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .main-col {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 0.5px solid var(--color-border-secondary);
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
+
+  .side-col {
+    padding-left: 0;
+  }
+
+  /* Container */
+  .container {
+    padding: 0 16px;
+  }
+
+  /* Tabs */
+  .tabs {
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .tab {
+    font-size: 9px;
+    padding: 6px 10px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Home Grid */
+  .home-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-top: 20px;
+  }
+
+  .home-main {
+    padding-right: 0;
+    border-right: none;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
+
+  .home-sidebar {
+    padding-left: 0;
+    padding-top: 20px;
+    margin-top: 20px;
+    border-top: 0.5px solid var(--color-border-secondary);
+  }
+
+  /* Home Sections */
+  .home-section {
+    margin-top: 20px;
+    padding-bottom: 16px;
+  }
+
+  .home-section-title {
+    font-size: 13px;
+  }
+
+  /* Steps */
+  .home-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .home-step {
+    border-right: none;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--color-border-secondary);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+
+  .home-step:last-child {
+    border-bottom: none;
+  }
+
+  .home-step-num {
+    font-size: 20px;
+  }
+
+  .home-step-title {
+    font-size: 10px;
+  }
+
+  .home-step-desc {
+    font-size: 10px;
+  }
+
+  /* Chips */
+  .home-chips {
+    gap: 4px;
+  }
+
+  .home-chip {
+    font-size: 10px;
+    padding: 4px 10px;
+  }
+
+  /* Platforms */
+  .home-platforms {
+    grid-template-columns: 1fr;
+  }
+
+  .home-platform {
+    border-right: none;
+    padding: 8px 0;
+    border-bottom: 0.5px solid var(--color-border-secondary);
+  }
+
+  .home-platform:last-child {
+    border-bottom: none;
+  }
+
+  .home-platform-icon {
+    font-size: 18px;
+    width: 28px;
+  }
+
+  .home-platform-name {
+    font-size: 10px;
+  }
+
+  .home-platform-desc {
+    font-size: 9px;
+  }
+
+  /* News Box */
+  .sidebar-news-box {
+    padding: 10px;
+  }
+
+  .sidebar-news-title {
+    font-size: 13px;
+  }
+
+  .sidebar-news-snippet {
+    font-size: 10px;
+  }
+
+  /* Quote */
+  .sidebar-quote {
+    font-size: 13px;
+    padding-left: 10px;
+  }
+
+  .sidebar-quote-attr {
+    font-size: 9px;
+    padding-left: 12px;
+  }
+
+  /* Facts */
+  .sidebar-fact-num {
+    font-size: 16px;
+    min-width: 40px;
+  }
+
+  .sidebar-fact-desc {
+    font-size: 9px;
+  }
+
+  /* Loading Indicator */
+  .ld {
+    padding: 12px;
+  }
+
+  .ld-stage {
+    font-size: 9px;
+  }
+
+  /* Sentiment */
+  .sent-num {
+    font-size: 20px;
+  }
+
+  .big-number {
+    font-size: 36px;
+  }
+
+  /* Data Table */
+  .post-row {
+    padding: 10px 0;
+  }
+
+  .post-text {
+    font-size: 12px;
+  }
+
+  /* Buttons */
+  .btn-export, .btn-ai {
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+
+  /* AI Analysis */
+  .ai-card {
+    padding: 12px;
+  }
+
+  .ai-card h3 {
+    font-size: 13px;
+  }
+
+  .ai-card p {
+    font-size: 11px;
+  }
+
+  /* History */
+  .hist-item {
+    padding: 8px 0;
+  }
+
+  .hist-keyword {
+    font-size: 12px;
+  }
+
+  .hist-meta {
+    font-size: 9px;
+  }
+
+  /* Pagination */
+  .pagination {
+    gap: 4px;
+  }
+
+  .page-btn {
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+
+  /* Statistics */
+  .stat-box {
+    padding: 10px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+  }
+
+  /* Charts */
+  .chart-container {
+    padding: 10px;
+  }
+
+  /* Loader */
+  .loader-logo {
+    font-size: 36px;
+    letter-spacing: -2px;
+  }
+
+  .loader-sub {
+    font-size: 9px;
+    letter-spacing: 2px;
+  }
+
+  .loader-tagline {
+    font-size: 13px;
+  }
+
+  .loader-corner {
+    bottom: 16px;
+    left: 16px;
+  }
+
+  .loader-corner-text {
+    font-size: 8px;
+  }
+}
+
+/* Small phones: max 380px */
+@media (max-width: 380px) {
+  .root {
+    padding: 0 12px 40px;
+  }
+
+  .masthead-title, .logo {
+    font-size: 28px;
+    letter-spacing: -1px;
+  }
+
+  .inp-sec {
+    padding: 10px 12px;
+  }
+
+  .sr input[type="text"] {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  .home-chip {
+    font-size: 9px;
+    padding: 3px 8px;
+  }
+
+  .tab {
+    font-size: 8px;
+    padding: 5px 8px;
+  }
+}
+}
