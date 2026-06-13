@@ -10,3 +10,5 @@ openai>=1.0
 lxml>=4.9
 cssselect>=1.2
 googlenewsdecoder
+gunicorn>=21.2
+whitenoise>=6.5
