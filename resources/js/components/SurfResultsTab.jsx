@@ -81,7 +81,7 @@ export default function SurfResultsTab({ results }) {
       {/* Summary */}
       {summary && (
         <>
-          <p className="srule">ringkasan: "{query}"</p>
+          <h3 className="srule" style={{ margin: 0 }}>ringkasan: "{query}"</h3>
           <div className="tc" style={{ marginBottom: "18px" }}>
             <div className="cell">
               <div className="cn">
@@ -125,7 +125,7 @@ export default function SurfResultsTab({ results }) {
       )}
 
       {/* Results */}
-      <p className="srule">{displayResults.length} hasil ditemukan</p>
+      <h3 className="srule" style={{ margin: 0 }}>{displayResults.length} hasil ditemukan</p>
       <div className="post-list">
         {displayResults.map((item, index) => (
           <div

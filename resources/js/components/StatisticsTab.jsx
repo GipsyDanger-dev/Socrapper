@@ -27,7 +27,7 @@ export default function StatisticsTab({ statistics, platform }) {
             <div className="stat-layout">
                 {/* Overview */}
                 <div>
-                    <p className="srule">ringkasan</p>
+                    <h3 className="srule" style={{ margin: 0 }}>ringkasan</p>
                     <div className="stat-row">
                         <div className="stat-cell">
                             <div className="stat-n">{statistics.total}</div>
@@ -50,7 +50,7 @@ export default function StatisticsTab({ statistics, platform }) {
 
                 {/* Sentiment */}
                 <div>
-                    <p className="srule">distribusi sentimen</p>
+                    <h3 className="srule" style={{ margin: 0 }}>distribusi sentimen</p>
                     <div className="stat-row">
                         <div className="stat-cell">
                             <div className="stat-n" style={{ color: 'var(--color-positive)' }}>{statistics.sentiments?.positive || 0}</div>
@@ -95,7 +95,7 @@ export default function StatisticsTab({ statistics, platform }) {
                 {/* Platform */}
                 {Object.keys(platformBreakdown).length > 0 && (
                     <div>
-                        <p className="srule">platform</p>
+                        <h3 className="srule" style={{ margin: 0 }}>platform</p>
                         <div className="stat-platform-list">
                             {Object.entries(platformBreakdown)
                                 .sort((a, b) => b[1] - a[1])
@@ -113,7 +113,7 @@ export default function StatisticsTab({ statistics, platform }) {
                 {/* Engagement */}
                 {hasEngagement && (
                     <div>
-                        <p className="srule">engagement</p>
+                        <h3 className="srule" style={{ margin: 0 }}>engagement</p>
                         <div className="stat-row">
                             <div className="stat-cell">
                                 <div className="stat-n">{fmtK(statistics.totalLikes)}</div>

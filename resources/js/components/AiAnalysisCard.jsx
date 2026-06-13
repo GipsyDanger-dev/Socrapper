@@ -59,7 +59,7 @@ export default function AiAnalysisCard({ analysis }) {
             {/* Key Points */}
             {(analysis.key_points || analysis.key_findings) && (analysis.key_points || analysis.key_findings).length > 0 && (
                 <div style={{ marginBottom: '16px' }}>
-                    <p className="srule">poin utama</p>
+                    <h3 className="srule" style={{ margin: 0 }}>poin utama</p>
                     <div className="post-list">
                         {(analysis.key_points || analysis.key_findings).map((point, i) => (
                             <div key={i} className="post-row">
@@ -111,7 +111,7 @@ export default function AiAnalysisCard({ analysis }) {
             {/* Entities */}
             {analysis.entities && (
                 <div style={{ marginBottom: '16px' }}>
-                    <p className="srule">entitas terdeteksi</p>
+                    <h3 className="srule" style={{ margin: 0 }}>entitas terdeteksi</p>
                     <div className="kw-cloud">
                         {analysis.entities.people && analysis.entities.people.map((p, i) => (
                             <span key={`p-${i}`} className="kw">{p}</span>
@@ -129,7 +129,7 @@ export default function AiAnalysisCard({ analysis }) {
             {/* Credibility */}
             {analysis.credibility && analysis.credibility.score > 0 && (
                 <div>
-                    <p className="srule">kredibilitas sumber</p>
+                    <h3 className="srule" style={{ margin: 0 }}>kredibilitas sumber</p>
                     <div className="bar-block">
                         <div className="bar-meta">
                             <span className="bar-name">skor</span>
