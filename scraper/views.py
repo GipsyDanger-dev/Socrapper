@@ -42,6 +42,7 @@ def scrape(request):
     try:
         results = web_scraper_service.scrape(keyword, platform, limit)
 
+        analysis = None
         try:
             sentiment_result = sentiment_service.analyze_sentiments([r.get('text', '') for r in results])
 
@@ -57,6 +58,20 @@ def scrape(request):
                 neg = sentiment_result.get('negative', 0)
                 neu = sentiment_result.get('neutral', 0)
                 pct = sentiment_result.get('percentage', {})
+
+            # Merge sentiment details into each result item
+            details = sentiment_result.get('results') or sentiment_result.get('details') or []
+            for i, item in enumerate(results):
+                if i < len(details):
+                    item['sentiment'] = details[i].get('sentiment', 'neutral')
+                    item['sentiment_score'] = details[i].get('confidence', 0)
+                    item['sentiment_reason'] = details[i].get('reason', '')
+                else:
+                    item['sentiment'] = 'neutral'
+                    item['sentiment_score'] = 0
+                    item['sentiment_reason'] = ''
+
+            analysis = sentiment_result
 
             ScrapeHistory.objects.create(
                 platform=platform,
@@ -81,6 +96,7 @@ def scrape(request):
             'platform': platform,
             'keyword': keyword,
             'method': method,
+            'analysis': analysis,
         })
     except Exception as e:
         logger.error(f"Scraping error: {e}")
