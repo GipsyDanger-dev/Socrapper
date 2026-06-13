@@ -62,6 +62,18 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
     const platforms = Object.entries(platformMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const maxPl = platforms[0]?.[1] || 1;
 
+    // Derive details from analysis results or data
+    const details = analysis.results || (data ? data.map((item, i) => ({
+        text: item.text || '',
+        sentiment: item.sentiment || 'neutral',
+        confidence: item.confidence || null,
+        reason: item.reason || '',
+    })) : []);
+
+    // Derive keywords from analysis
+    const posKw = analysis.positive_keywords || analysis.key_insights?.filter((_, i) => i % 2 === 0) || [];
+    const negKw = analysis.negative_keywords || [];
+
     // Word frequency analysis
     const wordFreq = {};
     const stopWords = ['yang', 'dan', 'di', 'ini', 'itu', 'dengan', 'untuk', 'pada', 'ke', 'dari', 'adalah', 'akan', 'oleh', 'juga', 'sudah', 'ada', 'bisa', 'tidak', 'belum', 'lebih', 'sangat', 'paling', 'atau', 'namun', 'tetapi', 'karena', 'jika', 'maka', 'serta', 'dalam', 'hal', 'bagi', 'seperti', 'tentang', 'the', 'and', 'is', 'in', 'to', 'of', 'a', 'for', 'that', 'with', 'on', 'at', 'by', 'from', 'it', 'as', 'an', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'shall', 'can'];

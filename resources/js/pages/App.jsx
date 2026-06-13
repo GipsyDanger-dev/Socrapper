@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import InputSection from '../components/InputSection';
 import RawDataTab from '../components/RawDataTab';
 import SentimentTab from '../components/SentimentTab';
@@ -10,6 +10,47 @@ import LoadingIndicator from '../components/LoadingIndicator';
 import HomeContent from '../components/HomeContent';
 import HomeSidebar from '../components/HomeSidebar';
 import SocrapperLoader from '../components/SocrapperLoader';
+
+// Toast notification component
+function Toast({ message, type, onClose }) {
+    if (!message) return null;
+    return (
+        <div style={{
+            position: 'fixed', top: '20px', right: '20px', zIndex: 10000,
+            padding: '12px 20px', maxWidth: '420px',
+            background: type === 'error' ? '#dc3545' : '#198754',
+            color: '#fff', fontSize: '13px', fontFamily: "'Playfair Display', serif",
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+        }}>
+            <span>{message}</span>
+            <button onClick={onClose} style={{
+                background: 'none', border: 'none', color: '#fff', cursor: 'pointer',
+                fontSize: '16px', padding: '0 4px', opacity: 0.8,
+            }}>×</button>
+        </div>
+    );
+}
+
+async function fetchJSON(url, options = {}) {
+    const controller = new AbortController();
+    const timeout = options.timeout || 60000;
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        if (!response.ok) {
+            let errorMsg = `HTTP ${response.status}`;
+            try {
+                const errData = await response.json();
+                errorMsg = errData.error || errData.detail || errorMsg;
+            } catch {}
+            throw new Error(errorMsg);
+        }
+        return await response.json();
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
 export default function App() {
     const [loaded, setLoaded] = useState(false);
@@ -23,11 +64,17 @@ export default function App() {
     const [currentMode, setCurrentMode] = useState('scraper');
     const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
     const [loadingStage, setLoadingStage] = useState(null);
+    const [toast, setToast] = useState({ message: '', type: 'error' });
 
     // Surf state
     const [surfResults, setSurfResults] = useState(null);
     const [aiAnalysis, setAiAnalysis] = useState(null);
     const [aiLoading, setAiLoading] = useState(false);
+
+    const showToast = useCallback((message, type = 'error') => {
+        setToast({ message, type });
+        setTimeout(() => setToast({ message: '', type: 'error' }), 5000);
+    }, []);
 
     const handleScrape = async (platform, keyword, limit) => {
         setLoading(true);
@@ -38,37 +85,22 @@ export default function App() {
         setSurfResults(null);
 
         try {
-            const response = await fetch('/api/scrape', {
+            const result = await fetchJSON('/api/scrape', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    platform,
-                    keyword,
-                    limit,
-                    method: 'webscrape',
-                }),
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ platform, keyword, limit, method: 'webscrape' }),
+                timeout: 120000,
             });
-
-            const result = await response.json();
 
             if (result.success) {
                 setLoadingStage('analyzing');
 
-                const analysisResponse = await fetch('/api/analyze', {
+                const analysisResult = await fetchJSON('/api/analyze', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        texts: result.data.map(item => item.text),
-                    }),
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ texts: result.data.map(item => item.text) }),
+                    timeout: 60000,
                 });
-
-                const analysisResult = await analysisResponse.json();
 
                 setLoadingStage('assembling');
 
@@ -80,11 +112,11 @@ export default function App() {
                 calculateStatistics(result.data);
                 setActiveTab('sentiment');
             } else {
-                alert('Error: ' + result.error);
+                showToast(result.error || 'Scraping gagal');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Terjadi kesalahan saat scraping');
+            showToast(error.name === 'AbortError' ? 'Request timeout — coba lagi' : error.message);
         } finally {
             setLoading(false);
             setLoadingStage(null);
@@ -100,15 +132,12 @@ export default function App() {
                 setCurrentKeyword(item.keyword);
                 setCurrentMode('scraper');
 
-                const analysisResponse = await fetch('/api/analyze', {
+                const analysisResult = await fetchJSON('/api/analyze', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify({ texts: item.raw_data.map(d => d.text) }),
+                    timeout: 60000,
                 });
-                const analysisResult = await analysisResponse.json();
                 if (analysisResult.success) {
                     setAnalysis(analysisResult.analysis);
                 }
@@ -117,6 +146,7 @@ export default function App() {
                 setActiveTab('sentiment');
             } catch (error) {
                 console.error('Error loading history:', error);
+                showToast('Gagal memuat history: ' + error.message);
             } finally {
                 setLoading(false);
             }
@@ -148,7 +178,7 @@ export default function App() {
                 body.analyze_sentiment = options.analyzeSentiment;
             }
 
-            const response = await fetch(endpoint, {
+            const result = await fetchJSON(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -156,9 +186,8 @@ export default function App() {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: JSON.stringify(body),
+                timeout: 120000,
             });
-
-            const result = await response.json();
 
             if (result.success) {
                 setLoadingStage('assembling');
@@ -167,11 +196,11 @@ export default function App() {
                 setAiAnalysis(null);
                 setActiveTab('surf-results');
             } else {
-                alert('Error: ' + (result.error || 'Gagal surfing'));
+                showToast(result.error || 'Gagal surfing');
             }
         } catch (error) {
             console.error('Surf error:', error);
-            alert('Terjadi kesalahan saat surfing');
+            showToast(error.name === 'AbortError' ? 'Request timeout — coba lagi' : error.message);
         } finally {
             setLoading(false);
             setLoadingStage(null);
@@ -183,13 +212,13 @@ export default function App() {
 
         const articles = surfResults.merged_results || surfResults.results || surfResults.search_results || [];
         if (articles.length === 0) {
-            alert('Tidak ada data untuk dianalisis');
+            showToast('Tidak ada data untuk dianalisis');
             return;
         }
 
         setAiLoading(true);
         try {
-            const response = await fetch('/api/surf/ai-analyze', {
+            const result = await fetchJSON('/api/surf/ai-analyze', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -201,17 +230,17 @@ export default function App() {
                     articles: articles.slice(0, 5),
                     type: type,
                 }),
+                timeout: 120000,
             });
 
-            const result = await response.json();
             if (result.success) {
                 setAiAnalysis(result.ai_analysis);
             } else {
-                alert('AI Error: ' + (result.error || 'Gagal analisis'));
+                showToast(result.error || 'Gagal analisis AI');
             }
         } catch (error) {
             console.error('AI error:', error);
-            alert('Terjadi kesalahan saat AI analysis');
+            showToast(error.name === 'AbortError' ? 'AI analysis timeout' : error.message);
         } finally {
             setAiLoading(false);
         }
@@ -270,17 +299,19 @@ export default function App() {
                 exportData = statistics;
             }
 
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 30000);
             const response = await fetch('/api/export', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     data: exportData,
                     type: type,
                     filename: `${type}_${currentKeyword}_${new Date().toISOString().slice(0, 10)}.csv`,
                 }),
+                signal: controller.signal,
             });
+            clearTimeout(timer);
 
             if (response.ok) {
                 const blob = await response.blob();
@@ -293,11 +324,11 @@ export default function App() {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             } else {
-                alert('Error: Gagal export file');
+                showToast('Gagal export file');
             }
         } catch (error) {
             console.error('Export error:', error);
-            alert('Terjadi kesalahan saat export');
+            showToast(error.name === 'AbortError' ? 'Export timeout' : 'Gagal export: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -311,6 +342,8 @@ export default function App() {
 
     return (
         <div className="root">
+            <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: 'error' })} />
+
             {/* Masthead */}
             <header className="mh">
                 <div>

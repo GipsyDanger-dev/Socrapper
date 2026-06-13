@@ -10,6 +10,7 @@ export default function HistoryTab({ onLoadHistory, onRefresh }) {
         setLoading(true);
         try {
             const response = await fetch(`/api/scrape-history?page=${page}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const result = await response.json();
             if (result.success) {
                 setHistory(result.history.data || []);
@@ -34,6 +35,7 @@ export default function HistoryTab({ onLoadHistory, onRefresh }) {
                 method: 'DELETE',
                 headers: { 'Accept': 'application/json' },
             });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const result = await response.json();
             if (result.success) {
                 fetchHistory(currentPage);
