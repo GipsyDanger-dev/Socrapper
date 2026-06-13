@@ -396,6 +396,9 @@ class WebScraperService:
         return match.group(1) if match else 'unknown'
 
     def _get_fallback(self, query, platform, limit):
+        """Generate placeholder results when scraping fails.
+        These are clearly marked as fallback data, not real scraped content.
+        """
         platform = platform or 'web'
         results = []
         for i in range(min(limit, 10)):
@@ -404,11 +407,12 @@ class WebScraperService:
                 'id': seed[:12],
                 'platform': platform,
                 'author': f"{platform}_user_{seed[:6]}",
-                'text': f"[{platform.title()}] Discussion about '{query}' — post #{i + 1} with relevant content and community engagement.",
-                'timestamp': (datetime.now() - timedelta(hours=random.randint(1, 48))).isoformat(),
+                'text': f"[Fallback] Tidak dapat mengambil data real dari {platform.title()} untuk '{query}'. Coba gunakan platform atau keyword lain.",
+                'timestamp': datetime.now().isoformat(),
                 'likes': 0,
                 'comments': 0,
                 'shares': 0,
-                'url': f"https://{platform}.com/post/{seed[:8]}",
+                'url': '',
+                'is_fallback': True,
             })
         return results

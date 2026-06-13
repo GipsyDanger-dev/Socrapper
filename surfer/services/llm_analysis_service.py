@@ -1,16 +1,30 @@
 import re
 import json
 import logging
+import threading
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 class LLMAnalysisService:
+    _client = None
+    _client_lock = threading.Lock()
+
     def __init__(self):
         self.api_key = getattr(settings, 'LLM_API_KEY', '')
         self.base_url = getattr(settings, 'LLM_BASE_URL', 'https://api.openai.com/v1')
         self.model = getattr(settings, 'LLM_MODEL', 'gpt-4o-mini')
+
+    def _get_client(self):
+        if LLMAnalysisService._client is not None:
+            return LLMAnalysisService._client
+        with LLMAnalysisService._client_lock:
+            if LLMAnalysisService._client is not None:
+                return LLMAnalysisService._client
+            from openai import OpenAI
+            LLMAnalysisService._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        return LLMAnalysisService._client
 
     def is_configured(self):
         return bool(self.api_key) and bool(self.base_url)
@@ -21,8 +35,7 @@ class LLMAnalysisService:
             return None
 
         try:
-            from openai import OpenAI
-            client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            client = self._get_client()
 
             messages = []
             if system_prompt:

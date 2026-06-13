@@ -1,6 +1,7 @@
 import re
 import json
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +26,14 @@ class SentimentService:
 
     def __init__(self):
         self._llm_service = None
+        self._llm_lock = threading.Lock()
 
     def _get_llm(self):
-        if self._llm_service is None:
+        if self._llm_service is not None:
+            return self._llm_service if self._llm_service is not False else None
+        with self._llm_lock:
+            if self._llm_service is not None:
+                return self._llm_service if self._llm_service is not False else None
             try:
                 from surfer.services.llm_analysis_service import LLMAnalysisService
                 self._llm_service = LLMAnalysisService()
@@ -126,6 +132,10 @@ Jangan tambahkan teks lain di luar JSON.'''
             'neutral': 0,
             'details': [],
         }
+
+        if not texts:
+            analysis['percentage'] = {'positive': 0, 'negative': 0, 'neutral': 100}
+            return analysis
 
         for text in texts:
             sentiment = self._detect_sentiment(text)

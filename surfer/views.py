@@ -19,6 +19,8 @@ def surf(request):
     query = request.data.get('query')
     if not query:
         return Response({'success': False, 'error': 'query is required'}, status=400)
+    if len(query) > 500:
+        return Response({'success': False, 'error': 'Query too long (max 500 chars)'}, status=400)
 
     # Track popular search
     track_search(query)
@@ -51,6 +53,8 @@ def quick_surf(request):
     query = request.data.get('query')
     if not query:
         return Response({'success': False, 'error': 'query is required'}, status=400)
+    if len(query) > 500:
+        return Response({'success': False, 'error': 'Query too long (max 500 chars)'}, status=400)
 
     # Track popular search
     track_search(query)
@@ -107,8 +111,12 @@ def ai_analyze(request):
 
     if not query:
         return Response({'success': False, 'error': 'query is required'}, status=400)
+    if len(query) > 500:
+        return Response({'success': False, 'error': 'Query too long (max 500 chars)'}, status=400)
     if not articles or not isinstance(articles, list) or len(articles) < 1:
         return Response({'success': False, 'error': 'articles array is required'}, status=400)
+    if len(articles) > 50:
+        return Response({'success': False, 'error': 'Maximum 50 articles allowed'}, status=400)
 
     if not llm_service.is_configured():
         return Response({
