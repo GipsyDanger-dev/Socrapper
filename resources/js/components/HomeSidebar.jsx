@@ -55,11 +55,21 @@ export default function HomeSidebar() {
 
     const fetchNews = async () => {
         try {
+            // Try cached news first (instant)
+            const cachedRes = await fetch('/api/cached-news');
+            const cachedData = await cachedRes.json();
+            if (cachedData.success && cachedData.general.length > 0) {
+                setNews(cachedData.general);
+                return;
+            }
+
+            // Fallback to live fetch
             const response = await fetch('/api/surf/quick', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: 'berita terkini Indonesia', limit: 10 }),
             });
+            if (!response.ok) return;
             const data = await response.json();
             if (data.success && data.results) {
                 setNews(data.results);

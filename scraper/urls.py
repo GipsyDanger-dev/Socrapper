@@ -12,4 +12,5 @@ urlpatterns = [
     path('scrape-history', views.get_history),
     path('scrape-history/<int:pk>', views.delete_history),
     path('popular-searches', views.get_popular_searches),
+    path('cached-news', views.get_cached_news),
 ]

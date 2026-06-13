@@ -27,6 +27,8 @@ def scrape(request):
         return Response({'success': False, 'error': 'Invalid platform'}, status=400)
     if not keyword:
         return Response({'success': False, 'error': 'Keyword is required'}, status=400)
+    if len(keyword) > 500:
+        return Response({'success': False, 'error': 'Keyword too long (max 500 chars)'}, status=400)
 
     # Track popular search
     track_search(keyword)
@@ -90,6 +92,8 @@ def analyze(request):
     texts = request.data.get('texts')
     if not texts or not isinstance(texts, list) or len(texts) < 1:
         return Response({'success': False, 'error': 'texts array is required'}, status=400)
+    if len(texts) > 100:
+        return Response({'success': False, 'error': 'Maximum 100 texts allowed'}, status=400)
 
     try:
         analysis = sentiment_service.analyze_sentiments(texts)
@@ -182,7 +186,7 @@ def delete_export(request, filename):
     try:
         success = CsvExportService.delete_file(filename)
         if not success:
-            return Response({'success': False, 'error': 'Failed to delete file'}, status=500)
+            return Response({'success': False, 'error': 'File not found'}, status=404)
         return Response({'success': True, 'message': 'Export file deleted'})
     except Exception as e:
         logger.error(f"Delete export error: {e}")
@@ -191,7 +195,12 @@ def delete_export(request, filename):
 
 @api_view(['GET'])
 def get_history(request):
-    page = int(request.query_params.get('page', 1))
+    try:
+        page = int(request.query_params.get('page', 1))
+        if page < 1:
+            page = 1
+    except (TypeError, ValueError):
+        return Response({'success': False, 'error': 'page must be a positive integer'}, status=400)
     per_page = 15
 
     history_qs = ScrapeHistory.objects.all()
@@ -266,4 +275,20 @@ def get_popular_searches(request):
         return Response({'success': True, 'searches': data})
     except Exception as e:
         logger.error(f"Get popular searches error: {e}")
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
+
+
+@api_view(['GET'])
+def get_cached_news(request):
+    """Return pre-cached news for instant loading."""
+    try:
+        from .services.news_cache_service import news_cache
+        return Response({
+            'success': True,
+            'general': news_cache.get_general(),
+            'trending': news_cache.get_trending(),
+            'last_update': news_cache.get_last_update(),
+        })
+    except Exception as e:
+        logger.error(f"Get cached news error: {e}")
         return Response({'success': False, 'error': 'An internal error occurred'}, status=500)
