@@ -1,0 +1,19 @@
+{
+    "name": "Socrapper — Analisis Sentimen Media Sosial",
+    "short_name": "Socrapper",
+    "description": "Analisis sentimen media sosial dan internet berbasis AI",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f2ede4",
+    "theme_color": "#f2ede4",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "/logo.webp",
+            "sizes": "any",
+            "type": "image/webp"
+        }
+    ],
+    "categories": ["business", "productivity"],
+    "lang": "id"
+}
