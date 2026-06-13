@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const PLATFORMS = [
     { id: 'twitter', name: 'Twitter/X', icon: 'fa-brands fa-x-twitter', desc: 'Real-time tweets & opini publik' },
@@ -12,7 +12,8 @@ const PLATFORMS = [
     { id: 'facebook', name: 'Facebook', icon: 'fa-brands fa-facebook', desc: 'Grup, halaman & komunitas' },
 ];
 
-const SUGGESTIONS = [
+// Fallback suggestions if no real data yet
+const FALLBACK_SUGGESTIONS = [
     'AI Indonesia',
     'Startup Jakarta',
     'Pilpres 2024',
@@ -22,6 +23,28 @@ const SUGGESTIONS = [
 ];
 
 export default function HomeContent({ onQuickSearch }) {
+    const [popularSearches, setPopularSearches] = useState([]);
+
+    useEffect(() => {
+        fetchPopularSearches();
+    }, []);
+
+    const fetchPopularSearches = async () => {
+        try {
+            const response = await fetch('/api/popular-searches?limit=8');
+            const data = await response.json();
+            if (data.success && data.searches.length > 0) {
+                setPopularSearches(data.searches);
+            }
+        } catch (err) {
+            console.error('Failed to fetch popular searches:', err);
+        }
+    };
+
+    const suggestions = popularSearches.length > 0
+        ? popularSearches.map(s => s.keyword)
+        : FALLBACK_SUGGESTIONS;
+
     return (
         <div className="home-wrap">
             {/* How It Works */}
@@ -55,16 +78,26 @@ export default function HomeContent({ onQuickSearch }) {
                 <div className="home-section-header">
                     <span className="home-section-num">II</span>
                     <h2 className="home-section-title">Pencarian Populer</h2>
+                    {popularSearches.length > 0 && (
+                        <span className="home-section-live">
+                            <i className="fa-solid fa-circle" /> real-time
+                        </span>
+                    )}
                 </div>
                 <div className="home-divider" />
                 <div className="home-chips">
-                    {SUGGESTIONS.map((kw) => (
+                    {suggestions.map((kw) => (
                         <button
                             key={kw}
                             className="home-chip"
                             onClick={() => onQuickSearch(kw)}
                         >
                             {kw}
+                            {popularSearches.find(s => s.keyword === kw) && (
+                                <span className="home-chip-count">
+                                    {popularSearches.find(s => s.keyword === kw).count}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>

@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import ScrapeHistory
+from .models import ScrapeHistory, PopularSearch
 from .services.sentiment_service import SentimentService
 from .services.csv_export_service import CsvExportService
 from .services.web_scraper_service import WebScraperService
@@ -27,6 +27,9 @@ def scrape(request):
         return Response({'success': False, 'error': 'Invalid platform'}, status=400)
     if not keyword:
         return Response({'success': False, 'error': 'Keyword is required'}, status=400)
+
+    # Track popular search
+    track_search(keyword)
     try:
         limit = int(limit)
         if limit < 1 or limit > 1000:
@@ -232,3 +235,35 @@ def delete_history(request, pk):
         return Response({'success': True, 'message': 'History deleted'})
     except ScrapeHistory.DoesNotExist:
         return Response({'success': False, 'error': 'Not found'}, status=404)
+
+
+def track_search(keyword):
+    """Track a search keyword for popular searches."""
+    if not keyword or len(keyword.strip()) < 2:
+        return
+    keyword = keyword.strip().lower()
+    try:
+        obj, created = PopularSearch.objects.get_or_create(keyword=keyword)
+        if not created:
+            obj.count += 1
+            obj.save(update_fields=['count'])
+    except Exception as e:
+        logger.warning(f"Failed to track search: {e}")
+
+
+@api_view(['GET'])
+def get_popular_searches(request):
+    """Return top 10 popular search keywords."""
+    try:
+        limit = int(request.query_params.get('limit', 10))
+        limit = min(limit, 20)
+    except (TypeError, ValueError):
+        limit = 10
+
+    try:
+        popular = PopularSearch.objects.order_by('-count', '-last_searched')[:limit]
+        data = [{'keyword': p.keyword, 'count': p.count} for p in popular]
+        return Response({'success': True, 'searches': data})
+    except Exception as e:
+        logger.error(f"Get popular searches error: {e}")
+        return Response({'success': False, 'error': 'An internal error occurred'}, status=500)

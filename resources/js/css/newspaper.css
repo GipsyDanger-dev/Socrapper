@@ -1333,6 +1333,26 @@ a.plat-tag-link:hover {
   text-transform: uppercase;
 }
 
+.home-section-live {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-positive);
+  margin-left: auto;
+}
+
+.home-section-live i {
+  font-size: 6px;
+  margin-right: 4px;
+  animation: pulse-live 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 .home-divider {
   width: 40px;
   height: 2px;
@@ -1408,6 +1428,17 @@ a.plat-tag-link:hover {
   background: var(--color-text-primary);
   color: var(--color-bg);
   border-color: var(--color-text-primary);
+}
+
+.home-chip-count {
+  font-size: 9px;
+  margin-left: 6px;
+  opacity: 0.5;
+  font-weight: 400;
+}
+
+.home-chip:hover .home-chip-count {
+  opacity: 0.7;
 }
 
 /* Platform grid */

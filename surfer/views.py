@@ -6,6 +6,7 @@ from django.conf import settings
 from .services.internet_surfer_service import InternetSurferService
 from .services.content_extractor_service import ContentExtractorService
 from .services.llm_analysis_service import LLMAnalysisService
+from scraper.views import track_search
 
 logger = logging.getLogger(__name__)
 surfer_service = InternetSurferService()
@@ -18,6 +19,9 @@ def surf(request):
     query = request.data.get('query')
     if not query:
         return Response({'success': False, 'error': 'query is required'}, status=400)
+
+    # Track popular search
+    track_search(query)
 
     search_limit = request.data.get('search_limit', 15)
     extract_content = request.data.get('extract_content', True)
@@ -47,6 +51,9 @@ def quick_surf(request):
     query = request.data.get('query')
     if not query:
         return Response({'success': False, 'error': 'query is required'}, status=400)
+
+    # Track popular search
+    track_search(query)
 
     limit = request.data.get('limit', 15)
     try:
