@@ -1,28 +1,57 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// Real quotes about media, journalism, and public opinion
+const QUOTES = [
+    { text: "Opini publik adalah kekuatan terbesar di dunia modern.", author: "Walter Lippmann" },
+    { text: "Pers adalah penjaga kebebasan masyarakat.", author: "Thomas Jefferson" },
+    { text: "Siapa yang mengontrol media, mengontrol pikiran publik.", author: "Noam Chomsky" },
+    { text: "Kebebasan pers adalah fondasi demokrasi.", author: "Mahatma Gandhi" },
+    { text: "Media massa adalah cerminan masyarakat yang melihatnya.", author: "Marshall McLuhan" },
+    { text: "Dalam era informasi, kebenaran adalah mata uang paling berharga.", author: "Edward Snowden" },
+    { text: "Jurnalisme adalah sejarah yang ditulis saat peristiwa terjadi.", author: "Theodore H. White" },
+    { text: "Opini yang terbentuk tanpa informasi adalah prasangka.", author: "Aristoteles" },
+    { text: "Media sosial memberikan suara kepada yang tidak bersuara.", author: "Mark Zuckerberg" },
+    { text: "Kebenaran tidak pernah takut akan penyelidikan.", author: "Benjamin Franklin" },
+];
+
 export default function HomeSidebar() {
     const [news, setNews] = useState([]);
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [fade, setFade] = useState(true);
-    const timerRef = useRef(null);
+    const [activeNewsIndex, setActiveNewsIndex] = useState(0);
+    const [newsFade, setNewsFade] = useState(true);
+    const [quoteIndex, setQuoteIndex] = useState(0);
+    const [quoteFade, setQuoteFade] = useState(true);
+    const newsTimerRef = useRef(null);
+    const quoteTimerRef = useRef(null);
 
     // Fetch news on mount
     useEffect(() => {
         fetchNews();
     }, []);
 
-    // Auto-rotate every 5 seconds
+    // Auto-rotate news every 5 seconds
     useEffect(() => {
         if (news.length <= 1) return;
-        timerRef.current = setInterval(() => {
-            setFade(false);
+        newsTimerRef.current = setInterval(() => {
+            setNewsFade(false);
             setTimeout(() => {
-                setActiveIndex((prev) => (prev + 1) % news.length);
-                setFade(true);
+                setActiveNewsIndex((prev) => (prev + 1) % news.length);
+                setNewsFade(true);
             }, 300);
         }, 5000);
-        return () => clearInterval(timerRef.current);
+        return () => clearInterval(newsTimerRef.current);
     }, [news]);
+
+    // Auto-rotate quotes every 6 seconds
+    useEffect(() => {
+        quoteTimerRef.current = setInterval(() => {
+            setQuoteFade(false);
+            setTimeout(() => {
+                setQuoteIndex((prev) => (prev + 1) % QUOTES.length);
+                setQuoteFade(true);
+            }, 400);
+        }, 6000);
+        return () => clearInterval(quoteTimerRef.current);
+    }, []);
 
     const fetchNews = async () => {
         try {
@@ -40,7 +69,8 @@ export default function HomeSidebar() {
         }
     };
 
-    const current = news[activeIndex];
+    const currentNews = news[activeNewsIndex];
+    const currentQuote = QUOTES[quoteIndex];
 
     return (
         <div className="sidebar-wrap">
@@ -49,17 +79,17 @@ export default function HomeSidebar() {
                 <div className="sidebar-section-label">
                     <i className="fa-solid fa-bolt" /> Berita Terkini
                 </div>
-                {current ? (
+                {currentNews ? (
                     <a
-                        href={current.url}
+                        href={currentNews.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`sidebar-news-link ${fade ? 'sidebar-news-visible' : 'sidebar-news-hidden'}`}
+                        className={`sidebar-news-link ${newsFade ? 'sidebar-news-visible' : 'sidebar-news-hidden'}`}
                     >
-                        <div className="sidebar-news-source">{current.source || 'News'}</div>
-                        <div className="sidebar-news-title">{current.title}</div>
-                        {current.snippet && (
-                            <div className="sidebar-news-snippet">{current.snippet.substring(0, 100)}...</div>
+                        <div className="sidebar-news-source">{currentNews.source || 'News'}</div>
+                        <div className="sidebar-news-title">{currentNews.title}</div>
+                        {currentNews.snippet && (
+                            <div className="sidebar-news-snippet">{currentNews.snippet.substring(0, 100)}...</div>
                         )}
                         <div className="sidebar-news-cta">buka berita <i className="fa-solid fa-arrow-up-right-from-square" /></div>
                     </a>
@@ -74,21 +104,33 @@ export default function HomeSidebar() {
                         {news.slice(0, 5).map((_, i) => (
                             <span
                                 key={i}
-                                className={`sidebar-news-dot ${i === activeIndex % 5 ? 'active' : ''}`}
-                                onClick={() => { setFade(false); setTimeout(() => { setActiveIndex(i); setFade(true); }, 200); }}
+                                className={`sidebar-news-dot ${i === activeNewsIndex % 5 ? 'active' : ''}`}
+                                onClick={() => { setNewsFade(false); setTimeout(() => { setActiveNewsIndex(i); setNewsFade(true); }, 200); }}
                             />
                         ))}
                     </div>
                 )}
             </div>
 
-            {/* Quote of the day */}
+            {/* Quote - rotating */}
             <div className="sidebar-section">
                 <div className="sidebar-section-label">Kutipan</div>
-                <blockquote className="sidebar-quote">
-                    "Opini publik adalah cerminan dari kebenaran yang belum ditemukan."
-                </blockquote>
-                <div className="sidebar-quote-attr">— Pepatah Jurnalis</div>
+                <div className={`sidebar-quote-wrap ${quoteFade ? 'sidebar-quote-visible' : 'sidebar-quote-hidden'}`}>
+                    <blockquote className="sidebar-quote">
+                        "{currentQuote.text}"
+                    </blockquote>
+                    <div className="sidebar-quote-attr">— {currentQuote.author}</div>
+                </div>
+                {/* Quote dots */}
+                <div className="sidebar-quote-dots">
+                    {QUOTES.map((_, i) => (
+                        <span
+                            key={i}
+                            className={`sidebar-quote-dot ${i === quoteIndex ? 'active' : ''}`}
+                            onClick={() => { setQuoteFade(false); setTimeout(() => { setQuoteIndex(i); setQuoteFade(true); }, 200); }}
+                        />
+                    ))}
+                </div>
             </div>
 
             {/* Facts */}
@@ -115,16 +157,16 @@ export default function HomeSidebar() {
                 </div>
                 {news.length > 1 ? (
                     <a
-                        href={news[(activeIndex + 3) % news.length]?.url}
+                        href={news[(activeNewsIndex + 3) % news.length]?.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`sidebar-news-link ${fade ? 'sidebar-news-visible' : 'sidebar-news-hidden'}`}
+                        className={`sidebar-news-link ${newsFade ? 'sidebar-news-visible' : 'sidebar-news-hidden'}`}
                     >
                         <div className="sidebar-news-source">
-                            {news[(activeIndex + 3) % news.length]?.source || 'News'}
+                            {news[(activeNewsIndex + 3) % news.length]?.source || 'News'}
                         </div>
                         <div className="sidebar-news-title">
-                            {news[(activeIndex + 3) % news.length]?.title}
+                            {news[(activeNewsIndex + 3) % news.length]?.title}
                         </div>
                         <div className="sidebar-news-cta">buka berita <i className="fa-solid fa-arrow-up-right-from-square" /></div>
                     </a>
