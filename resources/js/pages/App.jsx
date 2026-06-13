@@ -1,8 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, Suspense, lazy } from 'react';
 import InputSection from '../components/InputSection';
 import RawDataTab from '../components/RawDataTab';
 import SentimentTab from '../components/SentimentTab';
-import StatisticsTab from '../components/StatisticsTab';
 import HistoryTab from '../components/HistoryTab';
 import SurfResultsTab from '../components/SurfResultsTab';
 import AiAnalysisCard from '../components/AiAnalysisCard';
@@ -10,6 +9,9 @@ import LoadingIndicator from '../components/LoadingIndicator';
 import HomeContent from '../components/HomeContent';
 import HomeSidebar from '../components/HomeSidebar';
 import SocrapperLoader from '../components/SocrapperLoader';
+
+// Lazy load heavy components for better Core Web Vitals
+const StatisticsTab = lazy(() => import('../components/StatisticsTab'));
 
 // Toast notification component
 function Toast({ message, type, onClose }) {
@@ -492,7 +494,9 @@ export default function App() {
                         {/* PANEL: Statistics */}
                         {activeTab === 'statistics' && currentMode === 'scraper' && (
                             <div role="tabpanel" id="panel-statistics">
-                                <StatisticsTab statistics={statistics} platform={currentPlatform} />
+                                <Suspense fallback={<div className="panel on"><div className="empty-state">Memuat statistik...</div></div>}>
+                                    <StatisticsTab statistics={statistics} platform={currentPlatform} />
+                                </Suspense>
                             </div>
                         )}
 

@@ -13,6 +13,14 @@ export default defineConfig({
         outDir: 'public/build',
         emptyOutDir: true,
         manifest: true,
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    'react-vendor': ['react', 'react-dom'],
+                    'chart-vendor': ['chart.js', 'react-chartjs-2'],
+                },
+            },
+        },
     },
     server: {
         proxy: {
