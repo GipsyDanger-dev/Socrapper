@@ -154,7 +154,7 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
                     {/* AI Analysis Section */}
                     {aiAnalysis && (
                         <div style={{ marginBottom: '18px' }}>
-                            <h3 className="srule" style={{ margin: 0 }}>analisis AI</p>
+                            <h3 className="srule" style={{ margin: 0 }}>analisis AI</h3>
                             <div style={{
                                 padding: '14px 16px',
                                 background: 'var(--color-surface)',
@@ -171,7 +171,7 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
                     {/* Key Insights */}
                     {keyInsights.length > 0 && (
                         <div style={{ marginBottom: '18px' }}>
-                            <h3 className="srule" style={{ margin: 0 }}>insight utama</p>
+                            <h3 className="srule" style={{ margin: 0 }}>insight utama</h3>
                             <div className="post-list">
                                 {keyInsights.map((insight, index) => (
                                     <div key={index} className="post-row" style={{ gridTemplateColumns: '18px 1fr' }}>
@@ -193,7 +193,7 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
                     {/* Word Frequency */}
                     {topWords.length > 0 && (
                         <div style={{ marginBottom: '18px' }}>
-                            <h3 className="srule" style={{ margin: 0 }}>kata kunci teratas</p>
+                            <h3 className="srule" style={{ margin: 0 }}>kata kunci teratas</h3>
                             <div className="word-freq-list">
                                 {topWords.map(([word, count]) => (
                                     <div key={word} className="word-freq-item">
@@ -212,7 +212,7 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
                     )}
 
                     {/* Detailed Results */}
-                    <h3 className="srule" style={{ margin: 0 }}>data mentah · {details.length} item</p>
+                    <h3 className="srule" style={{ margin: 0 }}>data mentah · {details.length} item</h3>
                     <div className="post-list">
                         {details.map((item, index) => (
                             <div key={index} className="post-row">
