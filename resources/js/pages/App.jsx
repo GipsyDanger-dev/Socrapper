@@ -15,7 +15,7 @@ import SocrapperLoader from '../components/SocrapperLoader';
 function Toast({ message, type, onClose }) {
     if (!message) return null;
     return (
-        <div style={{
+        <div role="alert" aria-live="assertive" style={{
             position: 'fixed', top: '20px', right: '20px', zIndex: 10000,
             padding: '12px 20px', maxWidth: '420px',
             background: type === 'error' ? '#dc3545' : '#198754',
@@ -361,6 +361,11 @@ export default function App() {
                 </div>
             </header>
 
+            {/* Skip to content link for accessibility */}
+            <a href="#main-content" className="skip-link" style={{
+                position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden',
+            }}>Langsung ke konten utama</a>
+
             {/* Issue bar */}
             {currentKeyword && (
                 <div className="ib">
@@ -388,131 +393,169 @@ export default function App() {
             {/* Loading */}
             <LoadingIndicator show={loading} keyword={currentKeyword} stage={loadingStage} />
 
-            {/* Tabs + panels */}
-            {hasData && (
-                <div className="tabs-wrap">
-                    <div className="tabs-bar">
-                        {currentMode === 'scraper' ? (
-                            <>
-                                <button
-                                    className={`tab ${activeTab === 'sentiment' ? 'on' : ''}`}
-                                    onClick={() => setActiveTab('sentiment')}
-                                >
-                                    Sentimen
-                                </button>
-                                <button
-                                    className={`tab ${activeTab === 'raw-data' ? 'on' : ''}`}
-                                    onClick={() => setActiveTab('raw-data')}
-                                >
-                                    Data Mentah
-                                </button>
-                                <button
-                                    className={`tab ${activeTab === 'statistics' ? 'on' : ''}`}
-                                    onClick={() => setActiveTab('statistics')}
-                                >
-                                    Statistik
-                                </button>
-                                <button
-                                    className={`tab ${activeTab === 'history' ? 'on' : ''}`}
-                                    onClick={() => setActiveTab('history')}
-                                >
-                                    History
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <button
-                                    className={`tab ${activeTab === 'surf-results' ? 'on' : ''}`}
-                                    onClick={() => setActiveTab('surf-results')}
-                                >
-                                    Hasil Surfing
-                                </button>
-                                {analysis && (
+            {/* Main content */}
+            <main id="main-content">
+                {/* Tabs + panels */}
+                {hasData && (
+                    <div className="tabs-wrap">
+                        <nav className="tabs-bar" role="tablist" aria-label="Navigasi konten">
+                            {currentMode === 'scraper' ? (
+                                <>
                                     <button
+                                        role="tab"
+                                        aria-selected={activeTab === 'sentiment'}
+                                        aria-controls="panel-sentiment"
                                         className={`tab ${activeTab === 'sentiment' ? 'on' : ''}`}
                                         onClick={() => setActiveTab('sentiment')}
                                     >
                                         Sentimen
                                     </button>
-                                )}
-                            </>
-                        )}
-                        <span className="tab-rc">
-                            {data.length || (surfResults?.total_results || 0)} hasil
-                        </span>
-                    </div>
-
-                    {/* PANEL: Sentiment */}
-                    {activeTab === 'sentiment' && (
-                        <SentimentTab
-                            analysis={analysis}
-                            data={data}
-                            currentKeyword={currentKeyword}
-                            onExport={() => handleExportData('analysis')}
-                        />
-                    )}
-
-                    {/* PANEL: Raw Data */}
-                    {activeTab === 'raw-data' && currentMode === 'scraper' && (
-                        <RawDataTab
-                            data={data}
-                            onExport={() => handleExportData('scraping')}
-                        />
-                    )}
-
-                    {/* PANEL: Statistics */}
-                    {activeTab === 'statistics' && currentMode === 'scraper' && (
-                        <StatisticsTab statistics={statistics} platform={currentPlatform} />
-                    )}
-
-                    {/* PANEL: History */}
-                    {activeTab === 'history' && currentMode === 'scraper' && (
-                        <HistoryTab
-                            key={historyRefreshKey}
-                            onLoadHistory={handleLoadHistory}
-                            onRefresh={() => setHistoryRefreshKey(k => k + 1)}
-                        />
-                    )}
-
-                    {/* PANEL: Surf Results */}
-                    {activeTab === 'surf-results' && currentMode === 'surfer' && (
-                        <>
-                            <SurfResultsTab results={surfResults} />
-                            {surfResults && surfResults.total_results > 0 && (
-                                <div className="ai-section">
-                                    <div className="ai-buttons">
+                                    <button
+                                        role="tab"
+                                        aria-selected={activeTab === 'raw-data'}
+                                        aria-controls="panel-raw-data"
+                                        className={`tab ${activeTab === 'raw-data' ? 'on' : ''}`}
+                                        onClick={() => setActiveTab('raw-data')}
+                                    >
+                                        Data Mentah
+                                    </button>
+                                    <button
+                                        role="tab"
+                                        aria-selected={activeTab === 'statistics'}
+                                        aria-controls="panel-statistics"
+                                        className={`tab ${activeTab === 'statistics' ? 'on' : ''}`}
+                                        onClick={() => setActiveTab('statistics')}
+                                    >
+                                        Statistik
+                                    </button>
+                                    <button
+                                        role="tab"
+                                        aria-selected={activeTab === 'history'}
+                                        aria-controls="panel-history"
+                                        className={`tab ${activeTab === 'history' ? 'on' : ''}`}
+                                        onClick={() => setActiveTab('history')}
+                                    >
+                                        History
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        role="tab"
+                                        aria-selected={activeTab === 'surf-results'}
+                                        aria-controls="panel-surf"
+                                        className={`tab ${activeTab === 'surf-results' ? 'on' : ''}`}
+                                        onClick={() => setActiveTab('surf-results')}
+                                    >
+                                        Hasil Surfing
+                                    </button>
+                                    {analysis && (
                                         <button
-                                            className="ai-btn"
-                                            onClick={() => handleAiAnalyze('general')}
-                                            disabled={aiLoading}
+                                            role="tab"
+                                            aria-selected={activeTab === 'sentiment'}
+                                            aria-controls="panel-sentiment"
+                                            className={`tab ${activeTab === 'sentiment' ? 'on' : ''}`}
+                                            onClick={() => setActiveTab('sentiment')}
                                         >
-                                            {aiLoading ? 'AI menganalisis...' : 'AI General Analysis'}
+                                            Sentimen
                                         </button>
-                                        <button
-                                            className="ai-btn"
-                                            onClick={() => handleAiAnalyze('market')}
-                                            disabled={aiLoading}
-                                        >
-                                            {aiLoading ? 'AI menganalisis...' : 'AI Market Analysis'}
-                                        </button>
-                                    </div>
-                                    {aiAnalysis && <AiAnalysisCard analysis={aiAnalysis} />}
-                                </div>
+                                    )}
+                                </>
                             )}
-                        </>
-                    )}
+                            <span className="tab-rc" aria-live="polite">
+                                {data.length || (surfResults?.total_results || 0)} hasil
+                            </span>
+                        </nav>
 
-                    {/* Export row for scraper mode */}
-                    {data.length > 0 && currentMode === 'scraper' && activeTab !== 'history' && (
-                        <div className="exp-row">
-                            <span className="exp-note">{data.length} baris · UTF-8</span>
-                            <button className="exp-btn" onClick={() => handleExportData('scraping')}>
-                                ↓ CSV
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
+                        {/* PANEL: Sentiment */}
+                        {activeTab === 'sentiment' && (
+                            <div role="tabpanel" id="panel-sentiment">
+                                <SentimentTab
+                                    analysis={analysis}
+                                    data={data}
+                                    currentKeyword={currentKeyword}
+                                    onExport={() => handleExportData('analysis')}
+                                />
+                            </div>
+                        )}
+
+                        {/* PANEL: Raw Data */}
+                        {activeTab === 'raw-data' && currentMode === 'scraper' && (
+                            <div role="tabpanel" id="panel-raw-data">
+                                <RawDataTab
+                                    data={data}
+                                    onExport={() => handleExportData('scraping')}
+                                />
+                            </div>
+                        )}
+
+                        {/* PANEL: Statistics */}
+                        {activeTab === 'statistics' && currentMode === 'scraper' && (
+                            <div role="tabpanel" id="panel-statistics">
+                                <StatisticsTab statistics={statistics} platform={currentPlatform} />
+                            </div>
+                        )}
+
+                        {/* PANEL: History */}
+                        {activeTab === 'history' && currentMode === 'scraper' && (
+                            <div role="tabpanel" id="panel-history">
+                                <HistoryTab
+                                    key={historyRefreshKey}
+                                    onLoadHistory={handleLoadHistory}
+                                    onRefresh={() => setHistoryRefreshKey(k => k + 1)}
+                                />
+                            </div>
+                        )}
+
+                        {/* PANEL: Surf Results */}
+                        {activeTab === 'surf-results' && currentMode === 'surfer' && (
+                            <div role="tabpanel" id="panel-surf">
+                                <SurfResultsTab results={surfResults} />
+                                {surfResults && surfResults.total_results > 0 && (
+                                    <div className="ai-section">
+                                        <div className="ai-buttons">
+                                            <button
+                                                className="ai-btn"
+                                                onClick={() => handleAiAnalyze('general')}
+                                                disabled={aiLoading}
+                                            >
+                                                {aiLoading ? 'AI menganalisis...' : 'AI General Analysis'}
+                                            </button>
+                                            <button
+                                                className="ai-btn"
+                                                onClick={() => handleAiAnalyze('market')}
+                                                disabled={aiLoading}
+                                            >
+                                                {aiLoading ? 'AI menganalisis...' : 'AI Market Analysis'}
+                                            </button>
+                                        </div>
+                                        {aiAnalysis && <AiAnalysisCard analysis={aiAnalysis} />}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Export row for scraper mode */}
+                        {data.length > 0 && currentMode === 'scraper' && activeTab !== 'history' && (
+                            <div className="exp-row">
+                                <span className="exp-note">{data.length} baris · UTF-8</span>
+                                <button className="exp-btn" onClick={() => handleExportData('scraping')}>
+                                    ↓ CSV
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </main>
+
+            <footer style={{
+                textAlign: 'center', padding: '24px 16px', fontSize: '11px',
+                color: 'var(--color-text-faded, #a89e8a)',
+                fontFamily: "'Playfair Display', serif",
+            }}>
+                <p>Socrapper v2.0 — Analisis Sentimen Media Sosial & Internet berbasis AI</p>
+                <p style={{ marginTop: '4px' }}>Scrape & analisis dari Twitter, Reddit, YouTube, Instagram, TikTok, GitHub, StackOverflow, dan berita.</p>
+            </footer>
         </div>
     );
 }
