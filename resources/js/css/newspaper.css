@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --color-bg: #f5f3ee;
-  --color-surface: #ede9e0;
-  --color-text-primary: #1a1a18;
-  --color-text-secondary: #6b6b63;
-  --color-text-faded: #a8a89e;
-  --color-border-primary: rgba(26,26,24,.85);
-  --color-border-secondary: rgba(26,26,24,.14);
-  --color-border-tertiary: rgba(26,26,24,.14);
+  --color-bg: #f2ede4;
+  --color-surface: #e8e0d0;
+  --color-text-primary: #1c1a14;
+  --color-text-secondary: #6b6355;
+  --color-text-faded: #a89e8a;
+  --color-border-primary: rgba(28,26,20,.82);
+  --color-border-secondary: rgba(28,26,20,.13);
+  --color-border-tertiary: rgba(28,26,20,.13);
   --color-positive: #0f6e56;
   --color-negative: #a32d2d;
   --color-neutral: #5a5a52;
