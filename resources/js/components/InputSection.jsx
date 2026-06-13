@@ -87,20 +87,26 @@ export default function InputSection({ onScrape, onSurf }) {
                 {mode === 'scraper' && (
                     <>
                         <div className="sr">
+                            <label htmlFor="scrape-keyword" className="sr-only" style={{ position: 'absolute', left: '-9999px' }}>Kata kunci</label>
                             <input
+                                id="scrape-keyword"
                                 type="text"
                                 value={keyword}
                                 onChange={(e) => setKeyword(e.target.value)}
                                 placeholder="masukkan kata kunci..."
+                                aria-label="Kata kunci scraping"
                             />
+                            <label htmlFor="scrape-limit" className="sr-only" style={{ position: 'absolute', left: '-9999px' }}>Jumlah hasil</label>
                             <input
+                                id="scrape-limit"
                                 type="number"
                                 value={limit}
                                 onChange={(e) => setLimit(parseInt(e.target.value))}
                                 min="1"
                                 max="200"
+                                aria-label="Jumlah hasil"
                             />
-                            <button type="submit" disabled={loading}>
+                            <button type="submit" disabled={loading} aria-label="Mulai scraping">
                                 {loading ? 'memuat...' : 'scrape →'}
                             </button>
                         </div>
@@ -123,13 +129,16 @@ export default function InputSection({ onScrape, onSurf }) {
                 {mode === 'surfer' && (
                     <>
                         <div className="sr">
+                            <label htmlFor="surf-query" className="sr-only" style={{ position: 'absolute', left: '-9999px' }}>Query pencarian</label>
                             <input
+                                id="surf-query"
                                 type="text"
                                 value={keyword}
                                 onChange={(e) => setKeyword(e.target.value)}
                                 placeholder="apa yang ingin kamu cari..."
+                                aria-label="Query pencarian"
                             />
-                            <button type="submit" disabled={loading}>
+                            <button type="submit" disabled={loading} aria-label="Mulai surfing">
                                 {loading ? 'memuat...' : 'surf →'}
                             </button>
                         </div>
