@@ -1,5 +1,6 @@
 import re
 import logging
+import hashlib
 from collections import Counter
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,16 @@ class InternetSurferService:
         extract_content = options.get('extract_content', True)
         analyze_sentiment = options.get('analyze_sentiment', True)
 
+        # Generate cache key
+        cache_key = hashlib.md5(f"surf:{query}:{search_limit}:{extract_content}:{analyze_sentiment}".encode()).hexdigest()
+
+        # Check cache
+        from scraper.services.cache_utils import search_cache
+        cached = search_cache.get(cache_key)
+        if cached:
+            logger.debug(f"Cache hit for surf query: {query}")
+            return cached
+
         try:
             search_results = self.search_engine.search(query, search_limit)
 
@@ -86,7 +97,7 @@ class InternetSurferService:
 
             summary = self._generate_summary(query, merged_results, sentiment_analysis)
 
-            return {
+            result = {
                 'success': True,
                 'query': query,
                 'search_results': search_results,
@@ -96,6 +107,11 @@ class InternetSurferService:
                 'summary': summary,
                 'total_results': len(merged_results),
             }
+
+            # Cache the result
+            search_cache.set(cache_key, result)
+
+            return result
         except Exception as e:
             logger.error(f"Internet surfing error: {e}")
             return {
@@ -146,14 +162,26 @@ class InternetSurferService:
         }
 
     def quick_surf(self, query, limit=5):
+        # Check cache
+        cache_key = hashlib.md5(f"quick:{query}:{limit}".encode()).hexdigest()
+        from scraper.services.cache_utils import search_cache
+        cached = search_cache.get(cache_key)
+        if cached:
+            return cached
+
         search_results = self.search_engine.search(query, limit)
 
-        return {
+        result = {
             'success': True,
             'query': query,
             'results': search_results,
             'total': len(search_results),
         }
+
+        # Cache the result
+        search_cache.set(cache_key, result)
+
+        return result
 
     def _merge_results(self, search_results, extracted_data):
         merged = []

@@ -85,6 +85,9 @@ class ContentExtractorService:
         except Exception:
             return self._error_result(url, "Failed to parse HTML")
 
+        # Remove noise elements before extraction
+        self._remove_noise(doc)
+
         title = self._extract_title(doc, html)
         description = self._extract_meta_description(doc, html)
         author = self._extract_author(doc, html)
@@ -106,6 +109,18 @@ class ContentExtractorService:
             'images': images,
             'success': True,
         }
+
+    def _remove_noise(self, doc):
+        """Remove noise elements (ads, nav, footer, etc.) from the DOM."""
+        for selector in NOISE_SELECTORS:
+            try:
+                elements = doc.cssselect(selector)
+                for el in elements:
+                    parent = el.getparent()
+                    if parent is not None:
+                        parent.remove(el)
+            except Exception:
+                continue
 
     def _extract_title(self, doc, html):
         try:

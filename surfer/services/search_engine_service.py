@@ -2,18 +2,9 @@ import re
 import logging
 import time
 import random
-from urllib.parse import urlencode, urlparse, parse_qs, unquote
-from xml.etree import ElementTree
-
-import httpx
+from urllib.parse import urlencode, urlparse, unquote
 
 logger = logging.getLogger(__name__)
-
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-}
 
 
 class SearchEngineService:
@@ -39,6 +30,11 @@ class SearchEngineService:
                 remaining = limit - len(results)
                 if page < pages_needed:
                     time.sleep(random.uniform(1.0, 2.5))
+
+        # Fallback to Bing if Google returned nothing
+        if not results:
+            bing_results = self._bing_search(query, limit)
+            results.extend(bing_results)
 
         # Deduplicate by URL
         seen = set()
@@ -66,11 +62,18 @@ class SearchEngineService:
 
     def _google_news_search(self, query, limit):
         try:
-            url = f"https://news.google.com/rss/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&ceid=ID:id"
-            with httpx.Client(timeout=30, follow_redirects=True) as client:
-                response = client.get(url, headers=HEADERS)
-                xml_text = response.text
+            from scraper.services.shared_client import fetch
+            from scraper.services.rate_limiter import throttle
 
+            url = f"https://news.google.com/rss/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&ceid=ID:id"
+            throttle('news.google.com')
+            response = fetch(url)
+
+            if response.status_code != 200:
+                logger.warning(f"Google News returned status {response.status_code}")
+                return []
+
+            xml_text = response.text
             results = []
             items = re.findall(r'<item>(.*?)</item>', xml_text, re.DOTALL)
 
@@ -110,13 +113,29 @@ class SearchEngineService:
 
     def _google_web_search(self, query, limit, page=1):
         try:
-            time.sleep(random.uniform(0.5, 1.5))
+            from scraper.services.shared_client import fetch
+            from scraper.services.rate_limiter import throttle
+
             start = (page - 1) * 10
             url = f"https://www.google.com/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&num={min(limit, 10)}&start={start}"
 
-            with httpx.Client(timeout=30, follow_redirects=True) as client:
-                response = client.get(url, headers=HEADERS)
-                html = response.text
+            throttle('www.google.com')
+            response = fetch(url)
+
+            if response.status_code == 429:
+                logger.warning("Google rate limited us (429)")
+                return []
+
+            if response.status_code != 200:
+                logger.warning(f"Google returned status {response.status_code}")
+                return []
+
+            html = response.text
+
+            # Check for CAPTCHA
+            if 'captcha' in html.lower() or 'unusual traffic' in html.lower():
+                logger.warning("Google CAPTCHA detected")
+                return []
 
             results = []
 
@@ -163,6 +182,44 @@ class SearchEngineService:
             return results
         except Exception as e:
             logger.error(f"Google web search error: {e}")
+            return []
+
+    def _bing_search(self, query, limit):
+        """Fallback search using Bing."""
+        try:
+            from scraper.services.shared_client import fetch
+            from scraper.services.rate_limiter import throttle
+
+            url = f"https://www.bing.com/search?q={urlencode({'': query})[1:]}&count={min(limit, 10)}"
+            throttle('www.bing.com')
+            response = fetch(url)
+
+            if response.status_code != 200:
+                return []
+
+            html = response.text
+            results = []
+
+            # Bing result pattern: <li class="b_algo"><h2><a href="URL">TITLE</a></h2>
+            matches = re.findall(r'<li class="b_algo">\s*<h2>\s*<a href="(https?://[^"]+)"[^>]*>(.*?)</a>', html, re.DOTALL)
+            for url_match, title_html in matches:
+                if len(results) >= limit:
+                    break
+                if 'bing.com' in url_match or 'microsoft.com' in url_match:
+                    continue
+                title = re.sub(r'<[^>]*>', '', title_html).strip()
+                if title:
+                    results.append({
+                        'title': self._decode_html(title),
+                        'url': url_match,
+                        'snippet': '',
+                        'source': urlparse(url_match).hostname or '',
+                        'type': 'web',
+                    })
+
+            return results
+        except Exception as e:
+            logger.error(f"Bing search error: {e}")
             return []
 
     def _extract_xml_tag(self, xml_text, tag):
