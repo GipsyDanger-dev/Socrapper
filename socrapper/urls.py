@@ -5,14 +5,14 @@ def api_root(request):
     return JsonResponse({'status': 'ok', 'message': 'Socrapper API v2.0'})
 
 def robots_txt(request):
-    content = "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin/\n\nSitemap: https://socrapper.com/sitemap.xml\n"
+    content = "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin/\n\nSitemap: https://www.socrapper.my.id/sitemap.xml\n"
     return HttpResponse(content, content_type='text/plain')
 
 def sitemap_xml(request):
     content = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://socrapper.com/</loc>
+        <loc>https://www.socrapper.my.id/</loc>
         <lastmod>2026-06-13</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
