@@ -125,7 +125,7 @@ export default function SurfResultsTab({ results }) {
       )}
 
       {/* Results */}
-      <h3 className="srule" style={{ margin: 0 }}>{displayResults.length} hasil ditemukan</p>
+      <h3 className="srule" style={{ margin: 0 }}>{displayResults.length} hasil ditemukan</h3>
       <div className="post-list">
         {displayResults.map((item, index) => (
           <div
