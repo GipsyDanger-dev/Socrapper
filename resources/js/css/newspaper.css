@@ -1567,6 +1567,110 @@ a.plat-tag-link:hover {
   opacity: 0.4;
 }
 
+/* News Box */
+.sidebar-news-box {
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border-secondary);
+  padding: 14px;
+}
+
+.sidebar-news-box .sidebar-section-label {
+  margin-bottom: 10px;
+}
+
+.sidebar-news-box .sidebar-section-label i {
+  margin-right: 4px;
+  font-size: 10px;
+}
+
+.sidebar-news-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-news-link:hover .sidebar-news-title {
+  color: var(--color-text-primary);
+}
+
+.sidebar-news-visible {
+  opacity: 1;
+}
+
+.sidebar-news-hidden {
+  opacity: 0;
+}
+
+.sidebar-news-source {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-faded);
+  margin-bottom: 4px;
+}
+
+.sidebar-news-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+  margin-bottom: 6px;
+  transition: color 0.2s;
+}
+
+.sidebar-news-snippet {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.sidebar-news-cta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-faded);
+}
+
+.sidebar-news-cta i {
+  font-size: 8px;
+  margin-left: 3px;
+}
+
+.sidebar-news-loading {
+  font-size: 11px;
+  color: var(--color-text-faded);
+  padding: 10px 0;
+}
+
+.sidebar-news-loading i {
+  margin-right: 4px;
+}
+
+.sidebar-news-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.sidebar-news-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-border-secondary);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sidebar-news-dot.active {
+  background: var(--color-text-primary);
+}
+
 .sidebar-section {
   padding-bottom: 16px;
   border-bottom: 0.5px solid var(--color-border-secondary);
