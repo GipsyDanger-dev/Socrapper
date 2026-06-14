@@ -244,7 +244,7 @@ Response dalam format JSON:
                     'confidence': d['confidence'],
                     'reason': 'Keyword-based analysis',
                 }
-                for d in result['details']
+                for d in result.get('results') or result.get('details', [])
             ],
             'summary': {
                 'positive': result['positive'],

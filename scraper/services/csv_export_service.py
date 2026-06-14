@@ -81,7 +81,8 @@ class CsvExportService:
 
             writer.writerow(['Detailed Analysis'])
             writer.writerow(['Text', 'Sentiment', 'Confidence'])
-            for detail in analysis.get('details', []):
+            # Support both 'results' (keyword-based) and 'details' (LLM-based) keys
+            for detail in analysis.get('results') or analysis.get('details', []):
                 writer.writerow([
                     detail.get('text', ''),
                     detail.get('sentiment', ''),

@@ -1,9 +1,11 @@
 import logging
+import os
 from django.http import FileResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
+from django.db.models import F
 from .models import ScrapeHistory, PopularSearch
 from .services.sentiment_service import SentimentService
 from .services.csv_export_service import CsvExportService
@@ -43,6 +45,8 @@ def scrape(request):
         results = web_scraper_service.scrape(keyword, platform, limit)
 
         analysis = None
+
+        # Sentiment analysis — separate from history saving
         try:
             sentiment_result = sentiment_service.analyze_sentiments([r.get('text', '') for r in results])
 
@@ -72,6 +76,15 @@ def scrape(request):
                     item['sentiment_reason'] = ''
 
             analysis = sentiment_result
+        except Exception as e:
+            logger.warning(f"Sentiment analysis failed: {e}")
+
+        # Save history — separate from sentiment analysis
+        try:
+            pos = analysis.get('summary', {}).get('positive', 0) if analysis else 0
+            neg = analysis.get('summary', {}).get('negative', 0) if analysis else 0
+            neu = analysis.get('summary', {}).get('neutral', 0) if analysis else 0
+            pct = analysis.get('summary', {}).get('percentage', {}) if analysis else {}
 
             ScrapeHistory.objects.create(
                 platform=platform,
@@ -163,7 +176,7 @@ def export_data(request):
             open(filepath, 'rb'),
             content_type='text/csv',
             as_attachment=True,
-            filename=filepath.split('/')[-1].split('\\')[-1],
+            filename=os.path.basename(filepath),
         )
     except Exception as e:
         logger.error(f"Export error: {e}")
@@ -263,15 +276,20 @@ def delete_history(request, pk):
 
 
 def track_search(keyword):
-    """Track a search keyword for popular searches."""
+    """Track a search keyword for popular searches.
+
+    Uses atomic F() expression to avoid race conditions under concurrent requests.
+    get_or_create handles the first occurrence; F('count') + 1 handles increments
+    without read-modify-write races.
+    """
     if not keyword or len(keyword.strip()) < 2:
         return
     keyword = keyword.strip().lower()
     try:
         obj, created = PopularSearch.objects.get_or_create(keyword=keyword)
         if not created:
-            obj.count += 1
-            obj.save(update_fields=['count'])
+            # Atomic increment — no race condition even under concurrent requests
+            PopularSearch.objects.filter(pk=obj.pk).update(count=F('count') + 1)
     except Exception as e:
         logger.warning(f"Failed to track search: {e}")
 

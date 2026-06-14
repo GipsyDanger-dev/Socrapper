@@ -471,7 +471,11 @@ class WebScraperService:
 
     def _get_fallback(self, query, platform, limit):
         """Generate placeholder results when scraping fails.
+
         These are clearly marked as fallback data, not real scraped content.
+        Timestamps use a fixed sentinel value so they cannot be mistaken for
+        real data.  Consumers should check ``is_fallback`` before displaying
+        these results.
         """
         platform = platform or 'web'
         results = []
@@ -482,7 +486,7 @@ class WebScraperService:
                 'platform': platform,
                 'author': f"{platform}_user_{seed[:6]}",
                 'text': f"[Fallback] Tidak dapat mengambil data real dari {platform.title()} untuk '{query}'. Coba gunakan platform atau keyword lain.",
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': None,  # Not a real timestamp — indicates fallback data
                 'likes': 0,
                 'comments': 0,
                 'shares': 0,

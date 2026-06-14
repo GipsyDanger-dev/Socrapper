@@ -32,9 +32,9 @@ def surf(request):
     try:
         search_limit = int(search_limit)
         if search_limit < 1 or search_limit > 100:
-            search_limit = 20
+            return Response({'success': False, 'error': 'search_limit must be 1-100'}, status=400)
     except (TypeError, ValueError):
-        search_limit = 20
+        return Response({'success': False, 'error': 'search_limit must be a valid integer'}, status=400)
 
     results = surfer_service.surf(query, {
         'search_limit': search_limit,
@@ -76,6 +76,8 @@ def deep_surf(request):
     query = request.data.get('query')
     if not query:
         return Response({'success': False, 'error': 'query is required'}, status=400)
+    if len(query) > 500:
+        return Response({'success': False, 'error': 'Query too long (max 500 chars)'}, status=400)
 
     pages = request.data.get('pages', 3)
     try:
