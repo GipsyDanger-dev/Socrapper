@@ -122,23 +122,36 @@ class InternetSurferService:
 
     def deep_surf(self, query, pages=3):
         all_results = []
-        per_query_limit = max(10, pages * 5)
-        queries = [query, f"{query} terbaru", f"{query} analisis"]
+        per_query_limit = max(15, pages * 10)
+
+        # Generate diverse query variations for broader coverage
+        queries = [
+            query,
+            f"{query} terbaru",
+            f"{query} analisis",
+            f"{query} opini",
+            f"{query} review",
+            f"{query} diskusi",
+        ][:pages + 3]  # Limit based on pages param
 
         for q in queries:
-            results = self.surf(q, {
-                'search_limit': per_query_limit,
-                'extract_content': True,
-                'analyze_sentiment': False,
-            })
-            if results.get('success'):
-                all_results.extend(results.get('merged_results', []))
+            try:
+                results = self.surf(q, {
+                    'search_limit': per_query_limit,
+                    'extract_content': True,
+                    'analyze_sentiment': False,
+                })
+                if results.get('success'):
+                    all_results.extend(results.get('merged_results', []))
+            except Exception as e:
+                logger.warning(f"Deep surf query '{q}' failed: {e}")
+                continue
 
         seen_urls = set()
         unique_results = []
         for result in all_results:
             url = result.get('url', '')
-            if url not in seen_urls:
+            if url and url not in seen_urls:
                 seen_urls.add(url)
                 unique_results.append(result)
 

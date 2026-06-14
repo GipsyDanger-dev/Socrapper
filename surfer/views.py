@@ -25,16 +25,16 @@ def surf(request):
     # Track popular search
     track_search(query)
 
-    search_limit = request.data.get('search_limit', 15)
+    search_limit = request.data.get('search_limit', 20)
     extract_content = request.data.get('extract_content', True)
     analyze_sentiment = request.data.get('analyze_sentiment', True)
 
     try:
         search_limit = int(search_limit)
-        if search_limit < 1 or search_limit > 50:
-            search_limit = 15
+        if search_limit < 1 or search_limit > 100:
+            search_limit = 20
     except (TypeError, ValueError):
-        search_limit = 15
+        search_limit = 20
 
     results = surfer_service.surf(query, {
         'search_limit': search_limit,

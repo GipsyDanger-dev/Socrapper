@@ -36,6 +36,11 @@ class SearchEngineService:
             bing_results = self._bing_search(query, limit)
             results.extend(bing_results)
 
+        # Fallback to DuckDuckGo if still nothing
+        if not results:
+            ddg_results = self._duckduckgo_search(query, limit)
+            results.extend(ddg_results)
+
         # Deduplicate by URL
         seen = set()
         unique = []
@@ -220,6 +225,50 @@ class SearchEngineService:
             return results
         except Exception as e:
             logger.error(f"Bing search error: {e}")
+            return []
+
+    def _duckduckgo_search(self, query, limit):
+        """Fallback search using DuckDuckGo HTML."""
+        try:
+            from scraper.services.shared_client import fetch
+            from scraper.services.rate_limiter import throttle
+
+            url = f"https://html.duckduckgo.com/html/?q={urlencode({'': query})[1:]}"
+            throttle('duckduckgo.com')
+            response = fetch(url)
+
+            if response.status_code != 200:
+                return []
+
+            html = response.text
+            results = []
+
+            # DuckDuckGo HTML result pattern
+            matches = re.findall(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.DOTALL)
+            for url_match, title_html in matches:
+                if len(results) >= limit:
+                    break
+                if 'duckduckgo.com' in url_match:
+                    continue
+                title = re.sub(r'<[^>]*>', '', title_html).strip()
+                # DuckDuckGo uses //duckduckgo.com/l/?uddg=REAL_URL format
+                if 'uddg=' in url_match:
+                    from urllib.parse import parse_qs, urlparse as up
+                    parsed = up(url_match)
+                    qs = parse_qs(parsed.query)
+                    url_match = qs.get('uddg', [url_match])[0]
+                if title and url_match.startswith('http'):
+                    results.append({
+                        'title': self._decode_html(title),
+                        'url': url_match,
+                        'snippet': '',
+                        'source': urlparse(url_match).hostname or '',
+                        'type': 'web',
+                    })
+
+            return results
+        except Exception as e:
+            logger.error(f"DuckDuckGo search error: {e}")
             return []
 
     def _extract_xml_tag(self, xml_text, tag):
