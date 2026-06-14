@@ -2,6 +2,7 @@ import re
 import random
 import hashlib
 import logging
+import os
 from datetime import datetime, timedelta
 from urllib.parse import quote_plus, urlencode
 
@@ -22,6 +23,14 @@ class WebScraperService:
     }
 
     def scrape(self, query, platform=None, limit=10):
+        # YouTube: use API if key is available
+        if platform == 'youtube':
+            api_key = os.getenv('YOUTUBE_API_KEY', '')
+            if api_key:
+                results = self._scrape_youtube_api(query, limit, api_key)
+                if results:
+                    return results
+
         # Try Google News RSS first (works for all platforms, gives real data)
         results = self._scrape_via_news_rss(query, platform, limit)
         if results:
@@ -39,6 +48,71 @@ class WebScraperService:
             logger.warning(f"Scrapling failed for {platform}: {e}")
 
         return self._get_fallback(query, platform, limit)
+
+    def _scrape_youtube_api(self, query, limit, api_key):
+        """Use YouTube Data API v3 for accurate results."""
+        try:
+            from .shared_client import fetch
+            search_url = (
+                f"https://www.googleapis.com/youtube/v3/search?"
+                f"part=snippet&q={quote_plus(query)}&maxResults={min(limit, 50)}"
+                f"&type=video&key={api_key}"
+            )
+            response = fetch(search_url)
+            data = response.json()
+
+            if 'items' not in data:
+                logger.warning("YouTube API returned no items")
+                return None
+
+            results = []
+            for i, item in enumerate(data['items']):
+                snippet = item.get('snippet', {})
+                video_id = item.get('id', {}).get('videoId', '')
+
+                # Get video statistics (views, likes, comments)
+                stats = self._get_youtube_video_stats(video_id, api_key)
+
+                results.append({
+                    'id': f"yt-{video_id}",
+                    'platform': 'youtube',
+                    'author': snippet.get('channelTitle', 'Unknown'),
+                    'text': f"{snippet.get('title', '')}. {snippet.get('description', '')[:200]}",
+                    'timestamp': snippet.get('publishedAt', datetime.now().isoformat()),
+                    'likes': stats.get('likeCount', 0),
+                    'comments': stats.get('commentCount', 0),
+                    'shares': 0,
+                    'url': f"https://www.youtube.com/watch?v={video_id}",
+                    'views': stats.get('viewCount', 0),
+                    'thumbnail': snippet.get('thumbnails', {}).get('default', {}).get('url', ''),
+                })
+
+            logger.info(f"YouTube API returned {len(results)} results for '{query}'")
+            return results
+        except Exception as e:
+            logger.warning(f"YouTube API failed: {e}")
+            return None
+
+    def _get_youtube_video_stats(self, video_id, api_key):
+        """Get video statistics (views, likes, comments)."""
+        try:
+            from .shared_client import fetch
+            stats_url = (
+                f"https://www.googleapis.com/youtube/v3/videos?"
+                f"part=statistics&id={video_id}&key={api_key}"
+            )
+            response = fetch(stats_url)
+            data = response.json()
+            if 'items' in data and data['items']:
+                stats = data['items'][0].get('statistics', {})
+                return {
+                    'viewCount': int(stats.get('viewCount', 0)),
+                    'likeCount': int(stats.get('likeCount', 0)),
+                    'commentCount': int(stats.get('commentCount', 0)),
+                }
+        except Exception as e:
+            logger.debug(f"YouTube stats fetch failed: {e}")
+        return {'viewCount': 0, 'likeCount': 0, 'commentCount': 0}
 
     def _scrape_via_news_rss(self, query, platform, limit):
         """Use Google News RSS to get real articles for any platform."""
