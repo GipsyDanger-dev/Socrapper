@@ -1,17 +1,17 @@
 import React, { useState, useCallback, Suspense, lazy } from 'react';
-import InputSection from '../components/InputSection';
-import RawDataTab from '../components/RawDataTab';
-import SentimentTab from '../components/SentimentTab';
-import HistoryTab from '../components/HistoryTab';
-import SurfResultsTab from '../components/SurfResultsTab';
-import AiAnalysisCard from '../components/AiAnalysisCard';
-import LoadingIndicator from '../components/LoadingIndicator';
-import HomeContent from '../components/HomeContent';
-import HomeSidebar from '../components/HomeSidebar';
-import SocrapperLoader from '../components/SocrapperLoader';
+import InputSection from '../components/layout/InputSection';
+import RawDataTab from '../components/tabs/RawDataTab';
+import SentimentTab from '../components/tabs/SentimentTab';
+import HistoryTab from '../components/tabs/HistoryTab';
+import SurfResultsTab from '../components/tabs/SurfResultsTab';
+import AiAnalysisCard from '../components/layout/AiAnalysisCard';
+import LoadingIndicator from '../components/common/LoadingIndicator';
+import HomeContent from '../components/layout/HomeContent';
+import HomeSidebar from '../components/layout/HomeSidebar';
+import SocrapperLoader from '../components/common/SocrapperLoader';
 
 // Lazy load heavy components for better Core Web Vitals
-const StatisticsTab = lazy(() => import('../components/StatisticsTab'));
+const StatisticsTab = lazy(() => import('../components/tabs/StatisticsTab'));
 
 // Toast notification component
 function Toast({ message, type, onClose }) {

@@ -22,6 +22,9 @@ bootstrap/cache/*
 storage/app/*
 storage/logs/*
 
+# Coverage
+.coverage
+
 # Python
 __pycache__/
 *.py[cod]

@@ -10,6 +10,6 @@ pytest-django>=4.8
 # ALLOWED_HOSTS) so tests run headless and offline without a real .env.
 # >=1.6 because older 1.1.x predates pytest 8 compatibility.
 pytest-env>=1.6
-# Linter + formatter (config in ruff.toml: E+F rules).
-# Run with: ruff check . && ruff format --check .
+# Linter + formatter (config in config/ruff.toml: E+F rules).
+# Run with: ruff --config config/ruff.toml check .
 ruff>=0.16
