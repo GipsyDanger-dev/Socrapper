@@ -216,14 +216,23 @@ class InternetSurferService:
             sentiment_analysis = None
             if analyze_sentiment and merged_results:
                 texts = []
-                for item in merged_results:
+                text_indices = []
+                for i, item in enumerate(merged_results):
                     parts = [item.get("title", ""), item.get("snippet", ""), item.get("content_excerpt", "")]
                     text = ". ".join(self._strip_html(p) for p in parts if p)
                     if len(text) > 10:
                         texts.append(text)
+                        text_indices.append(i)
 
                 if texts:
                     sentiment_analysis = self.sentiment_service.analyze_sentiments(texts)
+                    # Attach sentiment to each merged result that was analyzed
+                    if sentiment_analysis and "results" in sentiment_analysis:
+                        for j, idx in enumerate(text_indices):
+                            if j < len(sentiment_analysis["results"]):
+                                sent_item = sentiment_analysis["results"][j]
+                                merged_results[idx]["sentiment"] = sent_item.get("sentiment", "neutral")
+                                merged_results[idx]["sentiment_confidence"] = sent_item.get("confidence", 0)
 
             summary = self._generate_summary(query, merged_results, sentiment_analysis)
 
@@ -289,14 +298,22 @@ class InternetSurferService:
                 unique_results.append(result)
 
         texts = []
-        for item in unique_results:
+        text_indices = []
+        for i, item in enumerate(unique_results):
             text = self._strip_html(f"{item.get('title', '')}. {item.get('content_excerpt', '')}")
             if len(text.strip()) > 10:
                 texts.append(text)
+                text_indices.append(i)
 
         sentiment = None
         if texts:
             sentiment = self.sentiment_service.analyze_sentiments(texts)
+            if sentiment and "results" in sentiment:
+                for j, idx in enumerate(text_indices):
+                    if j < len(sentiment["results"]):
+                        sent_item = sentiment["results"][j]
+                        unique_results[idx]["sentiment"] = sent_item.get("sentiment", "neutral")
+                        unique_results[idx]["sentiment_confidence"] = sent_item.get("confidence", 0)
 
         return {
             "success": True,

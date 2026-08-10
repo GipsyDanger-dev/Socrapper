@@ -54,6 +54,23 @@ class SearchEngineService:
                 seen.add(url)
                 unique.append(r)
 
+        # If we still haven't reached the limit, try fetching more
+        # from alternative news sources (additional query variations).
+        unique_count = len(unique)
+        if unique_count < limit and unique_count > 0:
+            broader_query = f"{query} 2025 OR 2026"
+            try:
+                more_news = self._google_news_search(broader_query, limit - unique_count)
+                for item in more_news:
+                    url = item.get("url", "")
+                    if url and url not in seen:
+                        seen.add(url)
+                        unique.append(item)
+                        if len(unique) >= limit:
+                            break
+            except Exception as e:
+                logger.debug(f"Broader news search failed: {e}")
+
         return unique[:limit]
 
     def _resolve_google_news_url(self, url):
@@ -75,7 +92,9 @@ class SearchEngineService:
             from scraper.services.shared_client import fetch
             from scraper.services.rate_limiter import throttle
 
-            url = f"https://news.google.com/rss/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&ceid=ID:id"
+            # Try fetching more results: Google News RSS defaults to ~10-15 items.
+            # &num=30 may not be supported by RSS but doesn't hurt to try.
+            url = f"https://news.google.com/rss/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&ceid=ID:id&num=30"
             throttle("news.google.com")
             response = fetch(url)
 
@@ -151,40 +170,70 @@ class SearchEngineService:
 
             results = []
 
-            # Pattern 1: /url?q=REAL_URL
-            matches = re.findall(r'<a[^>]+href="/url\?q=([^&"]+)[^"]*"[^>]*>(.*?)</a>', html, re.DOTALL)
-            for url_match, title_html in matches:
-                if len(results) >= limit:
+            # Pattern 1: /url?q=REAL_URL&...
+            for pattern in [
+                r'<a[^>]+href="/url\?q=([^&"]+)[^"]*"[^>]*>(.*?)</a>',
+                r'<a[^>]+href="/url\?q=([^&"]+)[^"]*".*?<br>(.*?)</a>',
+            ]:
+                if results:
                     break
-                clean_url = unquote(url_match)
-                title = re.sub(r"<[^>]*>", "", title_html).strip()
-
-                if "google.com" in clean_url:
-                    continue
-                if "youtube.com/results" in clean_url:
-                    continue
-
-                if title and clean_url.startswith("http"):
-                    results.append(
-                        {
-                            "title": self._decode_html(title),
-                            "url": clean_url,
-                            "snippet": "",
-                            "source": urlparse(clean_url).hostname or "",
-                            "type": "web",
-                        }
-                    )
-
-            # Pattern 2: <a href="https://..."><h3>...</h3></a>
-            if not results:
-                matches = re.findall(r'<a[^>]+href="(https?://[^"]+)"[^>]*>\s*<h3[^>]*>(.*?)</h3>', html, re.DOTALL)
+                matches = re.findall(pattern, html, re.DOTALL)
                 for url_match, title_html in matches:
                     if len(results) >= limit:
                         break
-                    if "google.com" in url_match:
-                        continue
+                    clean_url = unquote(url_match)
                     title = re.sub(r"<[^>]*>", "", title_html).strip()
-                    if title:
+                    if "google.com" in clean_url:
+                        continue
+                    if "youtube.com/results" in clean_url:
+                        continue
+                    if title and clean_url.startswith("http"):
+                        results.append(
+                            {
+                                "title": self._decode_html(title),
+                                "url": clean_url,
+                                "snippet": "",
+                                "source": urlparse(clean_url).hostname or "",
+                                "type": "web",
+                            }
+                        )
+
+            # Pattern 2: <a href="https://..."><h3>...</h3></a>  OR  <a href="https://..."><div>...<div>...<span>TITLE</span></div></div></a>
+            if not results:
+                for pattern in [
+                    r'<a[^>]+href="(https?://[^"]+)"[^>]*>\s*<h3[^>]*>(.*?)</h3>',
+                    r'<a[^>]+href="(https?://[^"]+)"[^>]*>.*?<div[^>]*>.*?<div[^>]*>(.*?)</div>',
+                ]:
+                    if results:
+                        break
+                    matches = re.findall(pattern, html, re.DOTALL)
+                    for url_match, title_html in matches:
+                        if len(results) >= limit:
+                            break
+                        if "google.com" in url_match:
+                            continue
+                        title = re.sub(r"<[^>]*>", "", title_html).strip()
+                        if title:
+                            results.append(
+                                {
+                                    "title": self._decode_html(title),
+                                    "url": url_match,
+                                    "snippet": "",
+                                    "source": urlparse(url_match).hostname or "",
+                                    "type": "web",
+                                }
+                            )
+
+            # Pattern 3: direct <a href="https://...">TITLE</a> outside h3
+            if not results:
+                matches = re.findall(
+                    r'<a[^>]+href="(https?://(?!(?:www\.)?google\.)[^"]+)"[^>]*>(.*?)</a>', html, re.DOTALL
+                )
+                for url_match, title_html in matches:
+                    if len(results) >= limit:
+                        break
+                    title = re.sub(r"<[^>]*>", "", title_html).strip()
+                    if title and len(title) > 5:
                         results.append(
                             {
                                 "title": self._decode_html(title),
@@ -194,6 +243,35 @@ class SearchEngineService:
                                 "type": "web",
                             }
                         )
+
+            # Try also searching with &gbv=1 (old Google layout) if still empty
+            if not results:
+                logger.debug("Google modern patterns failed, trying old layout...")
+                try:
+                    old_url = f"https://www.google.com/search?q={urlencode({'': query})[1:]}&hl=id&num={min(limit, 10)}&start={start}&gbv=1"
+                    throttle("www.google.com")
+                    old_response = fetch(old_url)
+                    if old_response.status_code == 200 and "captcha" not in old_response.text.lower():
+                        old_html = old_response.text
+                        old_matches = re.findall(
+                            r'<a[^>]+href="(https?://(?!(?:www\.)?google\.)[^"]+)"[^>]*>(.*?)</a>', old_html, re.DOTALL
+                        )
+                        for url_match, title_html in old_matches:
+                            if len(results) >= limit:
+                                break
+                            title = re.sub(r"<[^>]*>", "", title_html).strip()
+                            if title and len(title) > 5:
+                                results.append(
+                                    {
+                                        "title": self._decode_html(title),
+                                        "url": url_match,
+                                        "snippet": "",
+                                        "source": urlparse(url_match).hostname or "",
+                                        "type": "web",
+                                    }
+                                )
+                except Exception as e:
+                    logger.debug(f"Google old layout fallback failed: {e}")
 
             return results
         except Exception as e:

@@ -53,6 +53,62 @@ class SentimentService:
         "bbm turun",
         "kabar baik",
         "berita baik",
+        # Berita & bisnis umum
+        "dukungan",
+        "mendukung",
+        "didukung",
+        "apresiasi",
+        "mengapresiasi",
+        "pujian",
+        "memuji",
+        "meningkat",
+        "peningkatan",
+        "pertumbuhan",
+        "tumbuh",
+        "membaik",
+        "perbaikan",
+        "selamat",
+        "tertib",
+        "lolos",
+        "lulus",
+        "tercapai",
+        "realisasi",
+        "pulih",
+        "sembuh",
+        "damai",
+        "terpilih",
+        "menang",
+        "kemenangan",
+        "berkah",
+        "menguntungkan",
+        "efisien",
+        "efektif",
+        "produktif",
+        "tepat waktu",
+        "tepat sasaran",
+        "kualitas",
+        "berkualitas",
+        "terpercaya",
+        "dipercaya",
+        "andal",
+        "handal",
+        "terkenal",
+        "populer",
+        "favorit",
+        "cemerlang",
+        "gemilang",
+        "harmonis",
+        "rukun",
+        "kompak",
+        "solid",
+        "transparan",
+        "bertanggung jawab",
+        "layak",
+        "pantas",
+        "tepat",
+        "sesuai",
+        "puas",
+        "kepuasan",
     ]
 
     NEGATIVE_KEYWORDS = [
@@ -135,6 +191,101 @@ class SentimentService:
         "mencemaskan",
         "mengkhawatirkan",
         "menyedihkan",
+        # Berita & bisnis umum
+        "menurun",
+        "penurunan",
+        "jatuh",
+        "anjlok",
+        "rugi",
+        "merugikan",
+        "defisit",
+        "terhambat",
+        "hambatan",
+        "kendala",
+        "masalah",
+        "permasalahan",
+        "bermasalah",
+        "salah",
+        "kesalahan",
+        "error",
+        "rusak",
+        "kerusakan",
+        "terlambat",
+        "tunda",
+        "penundaan",
+        "batal",
+        "pembatalan",
+        "gagal",
+        "kegagalan",
+        "terpuruk",
+        "menurun drastis",
+        "merosot",
+        "terancam",
+        "mengancam",
+        "diserang",
+        "serangan",
+        "penyerangan",
+        "pertengkaran",
+        "perselisihan",
+        "pertikaian",
+        "perdebatan",
+        "sengketa",
+        "terjerat",
+        "tersangka",
+        "terdakwa",
+        "vonis",
+        "hukuman",
+        "denda",
+        "penalti",
+        "sanksi",
+        "larang",
+        "melarang",
+        "pembatasan",
+        "pemadaman",
+        "putus",
+        "terputus",
+        "gangguan",
+        "terganggu",
+        "guncangan",
+        "gejolak",
+        "ketidakpastian",
+        "pemogokan",
+        "boikot",
+        "ditolak",
+        "penolakan",
+        "mengeluh",
+        "komplain",
+        "kecurangan",
+        "manipulasi",
+        "penyalahgunaan",
+        "penculikan",
+        "perampokan",
+        "pembunuhan",
+        "pembunuhan",
+        "kekerasan",
+        "penganiayaan",
+        "pelecehan",
+        "narkoba",
+        "narkotika",
+        "terbakar",
+        "kebakaran",
+        "musnah",
+        "rusuh",
+        "kerusuhan",
+        "kacau",
+        "kekacauan",
+        "panik",
+        "kepanikan",
+        "waswas",
+        "resah",
+        "kecemasan",
+        "trauma",
+        "penderitaan",
+        "kesengsaraan",
+        "prihatin",
+        "keprihatinan",
+        "miris",
+        "memprihatinkan",
     ]
 
     NEGATION_WORDS = [
@@ -347,7 +498,9 @@ Jangan tambahkan teks lain di luar JSON."""
 
     def _calculate_confidence(self, text, sentiment):
         text_lower = text.lower()
-        matches = 0
+
+        if sentiment == "neutral":
+            return 40.0
 
         keywords = []
         if sentiment == "positive":
@@ -355,8 +508,21 @@ Jangan tambahkan teks lain di luar JSON."""
         elif sentiment == "negative":
             keywords = self.NEGATIVE_KEYWORDS
 
+        single_matches = 0
         for keyword in keywords:
-            pattern = r"\b" + re.escape(keyword) + r"\b"
-            matches += len(re.findall(pattern, text_lower))
+            if " " not in keyword:
+                pattern = r"\b" + re.escape(keyword) + r"\b"
+                single_matches += len(re.findall(pattern, text_lower))
 
-        return min(matches * 15, 100)
+        word_count = len(text_lower.split())
+
+        if single_matches == 0:
+            return 30.0
+        elif word_count < 10:
+            return 70.0
+        elif word_count < 20 and single_matches >= 2:
+            return 80.0
+        elif single_matches >= 5:
+            return min(50 + single_matches * 8, 95)
+        else:
+            return 60.0

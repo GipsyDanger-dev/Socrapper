@@ -77,8 +77,7 @@ export default function SurfResultsTab({ results }) {
   };
 
   return (
-    <div className="panel on">
-      {/* Summary */}
+    <div className="panel on">          {/* Summary */}
       {summary && (
         <>
           <h3 className="srule" style={{ margin: 0 }}>ringkasan: "{query}"</h3>
@@ -95,14 +94,16 @@ export default function SurfResultsTab({ results }) {
             </div>
             {summary.sentiment_overview && (
               <div className="cell">
-                <div className="cn">
-                  {summary.sentiment_overview.positive >
-                  summary.sentiment_overview.negative
-                    ? "+"
-                    : ""}
-                  {summary.sentiment_overview.positive || 0}
+                <div className="cn" style={{
+                  fontSize: '14px',
+                }}>
+                  <span className="pos">{summary.sentiment_overview.positive || 0}↑</span>
+                  {' '}
+                  <span className="neg">{summary.sentiment_overview.negative || 0}↓</span>
+                  {' '}
+                  <span className="neu">{summary.sentiment_overview.neutral || 0}—</span>
                 </div>
-                <div className="clbl">sentimen</div>
+                <div className="clbl">sentimen (+/−/—)</div>
               </div>
             )}
           </div>
@@ -170,6 +171,24 @@ export default function SurfResultsTab({ results }) {
                     </a>
                   ) : (
                     cleanText(item.title) || "Untitled"
+                  )}
+                  {/* Per-item sentiment badge */}
+                  {item.sentiment && (
+                    <span style={{
+                      display: 'inline-block',
+                      fontSize: '9px',
+                      padding: '1px 5px',
+                      marginLeft: '6px',
+                      borderRadius: '2px',
+                      fontWeight: 500,
+                      verticalAlign: 'middle',
+                      color: '#000',
+                      background: item.sentiment === 'positive' ? 'var(--color-positive, #2e7d32)'
+                        : item.sentiment === 'negative' ? 'var(--color-negative, #c62828)'
+                        : 'var(--color-text-faded, #888)',
+                    }}>
+                      {item.sentiment === 'positive' ? '+' : item.sentiment === 'negative' ? '−' : '•'}
+                    </span>
                   )}
                 </div>
                 <span

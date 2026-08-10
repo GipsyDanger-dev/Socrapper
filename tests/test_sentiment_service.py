@@ -130,29 +130,49 @@ class TestIndonesianNewsKeywords:
 class TestCalculateConfidence:
     """Test confidence score calculation."""
 
-    def test_single_keyword_match(self, service):
+    def test_single_keyword_short_text(self, service):
+        """Short text (<10 words) with 1 keyword match → 70."""
         confidence = service._calculate_confidence("This is amazing", "positive")
-        assert confidence == 15  # 1 match * 15
+        assert confidence == 70
 
-    def test_multiple_keyword_matches(self, service):
+    def test_multi_keyword_short_text(self, service):
+        """Short text (<10 words) with multiple keywords → 70."""
         confidence = service._calculate_confidence("Amazing fantastic wonderful great", "positive")
-        assert confidence == 60  # 4 matches * 15
+        assert confidence == 70
 
-    def test_max_confidence_capped(self, service):
-        # Need enough matches to exceed 100 (each match = 15 points, cap at 100)
-        confidence = service._calculate_confidence(
-            "amazing amazing amazing amazing amazing amazing amazing amazing", "positive"
-        )
-        assert confidence == 100  # 8 matches * 15 = 120, capped at 100
+    def test_medium_text_many_matches(self, service):
+        """Text with 10-20 words and >=2 matches → 80."""
+        text = "amazing " * 12
+        confidence = service._calculate_confidence(text, "positive")
+        assert confidence == 80
 
-    def test_no_matches(self, service):
-        confidence = service._calculate_confidence("The weather is fine", "positive")
-        assert confidence == 0
+    def test_long_text_lots_of_matches(self, service):
+        """Medium text (<20 words) with many matches → 80."""
+        text = "amazing great fantastic wonderful " * 3
+        confidence = service._calculate_confidence(text, "positive")
+        assert confidence == 80
 
-    def test_neutral_sentiment_zero_confidence(self, service):
-        """Neutral sentiment has no keywords, so confidence should be 0."""
+    def test_no_matches_non_neutral(self, service):
+        """No matches for non-neutral → 30 baseline."""
+        confidence = service._calculate_confidence("The weather is fine today", "positive")
+        assert confidence == 30
+
+    def test_neutral_confidence(self, service):
+        """Neutral sentiment gets fixed moderate confidence."""
         confidence = service._calculate_confidence("Random text here", "neutral")
-        assert confidence == 0
+        assert confidence == 40
+
+    def test_borderline_ten_words(self, service):
+        """Exactly 10 words with 1 match → not short text, returns 60."""
+        text = "one two three four five six seven eight nine amazing"
+        confidence = service._calculate_confidence(text, "positive")
+        assert confidence == 60
+
+    def test_text_twenty_plus_words(self, service):
+        """20+ words with <5 matches → returns 60."""
+        text = "one two three four five six seven eight nine ten " * 2 + "amazing great"
+        confidence = service._calculate_confidence(text, "positive")
+        assert confidence == 60
 
 
 class TestAnalyzeWithKeywords:
