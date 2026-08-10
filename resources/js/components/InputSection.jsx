@@ -10,7 +10,7 @@ export default function InputSection({ onScrape, onSurf }) {
 
     // Surf options
     const [surfMode, setSurfMode] = useState('full');
-    const [searchLimit, setSearchLimit] = useState(15);
+    const [searchLimit, setSearchLimit] = useState(20);
     const [extractContent, setExtractContent] = useState(true);
     const [analyzeSentiment, setAnalyzeSentiment] = useState(true);
 

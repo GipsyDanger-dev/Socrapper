@@ -50,7 +50,8 @@ Scrape keseluruhan internet — bukan hanya beberapa platform. User bisa filter 
 ```
 Socrapper/
 ├── manage.py                      # Django CLI
-├── requirements.txt               # Python dependencies
+├── requirements.txt               # Python runtime dependencies
+├── requirements-dev.txt           # Python dev/test dependencies (pytest)
 ├── package.json                   # Node dependencies
 ├── vite.config.js                 # Vite → proxy ke Django:8000
 ├── index.html                     # React SPA entry
@@ -126,7 +127,24 @@ python manage.py migrate
 npm install
 ```
 
-### 4. Jalankan aplikasi
+### 4. (Opsional) Jalankan test suite & linter
+
+```bash
+# Install dev/test dependencies
+pip install -r requirements.txt -r requirements-dev.txt
+
+# Jalankan seluruh test
+python -m pytest tests/
+
+# Jalankan linter (konfigurasi di ruff.toml)
+ruff check .
+
+# Format kode otomatis (dan cek tanpa mengubah file)
+ruff format .
+ruff format --check .
+```
+
+### 5. Jalankan aplikasi
 
 **Terminal 1 — Django backend:**
 ```bash
@@ -158,8 +176,9 @@ DB_ENGINE=sqlite
 
 # LLM Configuration (opsional, untuk AI analysis)
 LLM_API_KEY=your-api-key
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_MODEL=gpt-4o-mini
+LLM_BASE_URL=https://openrouter.ai/api/v1
+# Bisa berupa rantai fallback (dipisah koma) — model berikutnya dicoba jika yang pertama gagal/rate-limited
+LLM_MODEL=google/gemma-4-31b-it:free,openai/gpt-oss-20b:free
 
 # Django
 SECRET_KEY=your-secret-key-here
@@ -176,11 +195,14 @@ DEBUG=True
 
 ### LLM Configuration (Optional)
 
-LLM digunakan untuk fitur **AI Analyze** di Internet Surfer. Tanpa LLM, fitur ini tetap jalan dengan fallback keyword-based analysis.
+LLM digunakan untuk analisis sentimen (AI) dan fitur **AI Analyze** di Internet Surfer. Tanpa LLM, fitur ini tetap jalan dengan fallback keyword-based analysis.
 
 Supported API:
 - OpenAI API (`https://api.openai.com/v1`)
+- OpenRouter (`https://openrouter.ai/api/v1`) — termasuk model gratis berakhiran `:free`
 - Any OpenAI-compatible API (LocalAI, Ollama, etc)
+
+`LLM_MODEL` bisa berupa rantai fallback yang dipisah koma. Jika model pertama gagal atau kena rate-limit (umum terjadi pada model gratis), model berikutnya akan dicoba otomatis.
 
 ## API Endpoints
 

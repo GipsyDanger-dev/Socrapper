@@ -15,6 +15,12 @@ class LLMAnalysisService:
         self.api_key = getattr(settings, "LLM_API_KEY", "")
         self.base_url = getattr(settings, "LLM_BASE_URL", "https://api.openai.com/v1")
         self.model = getattr(settings, "LLM_MODEL", "gpt-4o-mini")
+        # LLM_MODEL may be a comma-separated fallback chain, e.g.
+        # "google/gemma-4-31b-it:free,openai/gpt-oss-20b:free". Free-tier
+        # endpoints are often rate-limited or temporarily unavailable, so
+        # trying the next model keeps AI analysis working.
+        self.models = [m.strip() for m in self.model.split(",") if m.strip()]
+        self.last_model = None
 
     def _get_client(self):
         if LLMAnalysisService._client is not None:
@@ -24,7 +30,18 @@ class LLMAnalysisService:
                 return LLMAnalysisService._client
             from openai import OpenAI
 
-            LLMAnalysisService._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            default_headers = None
+            if "openrouter.ai" in self.base_url:
+                # Recommended by OpenRouter so requests are attributed to the site
+                default_headers = {
+                    "HTTP-Referer": "https://www.socrapper.my.id",
+                    "X-Title": "Socrapper",
+                }
+            LLMAnalysisService._client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                default_headers=default_headers,
+            )
         return LLMAnalysisService._client
 
     def is_configured(self):
@@ -35,25 +52,31 @@ class LLMAnalysisService:
             logger.warning("LLM not configured. Set LLM_API_KEY and LLM_BASE_URL in .env")
             return None
 
-        try:
-            client = self._get_client()
+        client = self._get_client()
 
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
+        # Reset before trying, so a total failure doesn't leave the previous
+        # request's model on this (module-level singleton) service.
+        self.last_model = None
 
-            response = client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=0.3,
-                max_tokens=2000,
-            )
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
 
-            return response.choices[0].message.content
-        except Exception as e:
-            logger.error(f"LLM analysis error: {e}")
-            return None
+        for model in self.models:
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=2000,
+                )
+                self.last_model = model
+                return response.choices[0].message.content
+            except Exception as e:
+                logger.warning(f"LLM analysis error with {model}: {e}")
+
+        return None
 
     def analyze_sentiment(self, texts):
         system_prompt = """Kamu adalah analis sentimen profesional. Analisis sentimen dari teks-teks yang diberikan.

@@ -26,6 +26,7 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
     const dominantEmotion = analysis.dominant_emotion || null;
     const overallSentiment = analysis.summary?.overall || (pos > neg ? 'positive' : neg > pos ? 'negative' : 'neutral');
     const overallConfidence = analysis.summary?.overall_confidence || null;
+    const modelLabel = analysis.model ? String(analysis.model).split(',')[0].trim() : 'AI Model';
 
     const getSentimentClass = (s) => {
         if (s === 'positive') return 'pos';
@@ -130,7 +131,7 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
                             {dominantEmotion && ` Emosi dominan: ${dominantEmotion}.`}
                         </p>
                         <cite>
-                            {aiAnalysis ? 'MiMo v2.5 Pro · AI Sentiment Analysis' : 'Keyword Matching · Fallback'}
+                            {aiAnalysis ? `${modelLabel} · AI Sentiment Analysis` : 'Keyword Matching · Fallback'}
                             {overallConfidence && ` · Confidence: ${overallConfidence}%`}
                         </cite>
                     </div>
@@ -332,7 +333,7 @@ export default function SentimentTab({ analysis, data, currentKeyword, onExport 
                                 fontSize: '10px',
                                 color: 'var(--color-text-secondary)',
                             }}>
-                                <div style={{ fontWeight: 500, marginBottom: '2px' }}>MiMo v2.5 Pro</div>
+                                <div style={{ fontWeight: 500, marginBottom: '2px' }}>{modelLabel}</div>
                                 <div>LLM Sentiment Analysis</div>
                                 {overallConfidence && <div>Overall Confidence: {overallConfidence}%</div>}
                             </div>

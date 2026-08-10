@@ -5,7 +5,6 @@ Tests caching behavior, TTL expiration, thread safety, rate limiting.
 
 import time
 import threading
-import pytest
 from scraper.services.cache_utils import TTLCache
 from scraper.services.rate_limiter import RateLimiter
 

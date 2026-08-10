@@ -4,7 +4,8 @@ Pytest configuration and fixtures for Socrapper test suite.
 
 import os
 
-# Set test environment before Django loads
+# Set test environment before Django loads (SQLite/LLM-off is enforced by
+# tests.settings_test via pytest.ini DJANGO_SETTINGS_MODULE).
 os.environ["DB_ENGINE"] = "sqlite"
 os.environ["SECRET_KEY"] = "test-secret-key-not-for-production"
 os.environ["ALLOWED_HOSTS"] = "localhost,127.0.0.1,testserver"
@@ -19,15 +20,32 @@ django.setup()
 if "testserver" not in settings.ALLOWED_HOSTS:
     settings.ALLOWED_HOSTS.append("testserver")
 
-import pytest
-from rest_framework.test import APIClient
-from scraper.models import ScrapeHistory, PopularSearch
+import pytest  # noqa: E402  (must come after django.setup())
+from rest_framework.test import APIClient  # noqa: E402
+from scraper.models import ScrapeHistory, PopularSearch  # noqa: E402
 
 
 @pytest.fixture
 def api_client():
     """DRF API client for testing endpoints."""
     return APIClient()
+
+
+@pytest.fixture(autouse=True)
+def disable_api_throttling(settings):
+    """Disable DRF rate limiting during tests.
+
+    socrapper.settings applies AnonRateThrottle at 'anon: 30/minute'. DRF
+    stores throttle history in Django's cache (LocMemCache), which persists
+    across tests inside a single pytest process. After ~30 API requests the
+    test client is rejected with HTTP 429 for the remainder of the suite
+    (test ordering bug). Rate limiting is a production concern and must not
+    affect unit tests.
+    """
+    settings.REST_FRAMEWORK = {
+        **settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_CLASSES": [],
+    }
 
 
 @pytest.fixture

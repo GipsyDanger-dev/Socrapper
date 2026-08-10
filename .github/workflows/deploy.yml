@@ -4,9 +4,63 @@ on:
   push:
     branches: [main]
 
+# Only one deploy at a time per branch. A second push waits instead of
+# racing `git reset --hard` on the server.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+    # Suite itself takes ~4 min (some tests hit live search engines) plus
+    # pip install of scrapling; leave headroom for slower runners.
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          # requirements-dev.txt pulls in pytest, pytest-django, pytest-env
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run test suite
+        env:
+          SECRET_KEY: ci-test-secret-key-not-for-production
+        run: python -m pytest tests/ -q
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ruff
+        # Matches the version tested locally (see requirements-dev.txt)
+        run: pip install ruff>=0.16
+
+      - name: Lint with ruff
+        run: ruff check .
+
+      - name: Check formatting with ruff
+        run: ruff format --check .
+
+  deploy:
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Deploy to VPS via SSH
         env:
@@ -14,11 +68,23 @@ jobs:
           SSH_HOST: ${{ secrets.DEPLOY_HOST || secrets.SERVER_HOST }}
           SSH_USER: ${{ secrets.SERVER_USER || 'ubuntu' }}
         run: |
+          set -e
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "::error::SSH private key is missing. Set DEPLOY_KEY or SERVER_SSH_KEY secret."
+            exit 1
+          fi
+          if [ -z "$SSH_HOST" ]; then
+            echo "::error::SSH host is missing. Set DEPLOY_HOST or SERVER_HOST secret."
+            exit 1
+          fi
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          # printf (not echo) preserves the key exactly, including trailing newline
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          # -T caps the scan timeout so an unreachable host fails fast
+          ssh-keyscan -H -T 10 "$SSH_HOST" >> ~/.ssh/known_hosts
           ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST "
+            set -e
             export PATH=/home/ubuntu/.local/bin:/home/ubuntu/.hermes/node/bin:\$PATH
             cd /home/ubuntu/socrapper
             echo '[DEPLOY] Pulling latest code...'

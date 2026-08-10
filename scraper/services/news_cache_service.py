@@ -2,7 +2,7 @@ import re
 import logging
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 

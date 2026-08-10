@@ -14,12 +14,13 @@ class SearchEngineService:
         # Calculate pages needed (10 results per page max for Google)
         pages_needed = max(1, (limit + 9) // 10)
 
-        # Fetch from Google News RSS
-        news_limit = (limit + 1) // 2
-        news_results = self._google_news_search(query, news_limit)
+        # Fetch from Google News RSS. It is the most reliable source, so give
+        # it the full quota instead of only half — this avoids returning a
+        # tiny result set whenever Google Web Search blocks the server.
+        news_results = self._google_news_search(query, limit)
         results.extend(news_results)
 
-        # Fetch from Google Web Search with pagination
+        # Fetch from Google Web Search with pagination for the remainder
         remaining = limit - len(results)
         if remaining > 0:
             for page in range(1, pages_needed + 1):
@@ -31,14 +32,17 @@ class SearchEngineService:
                 if page < pages_needed:
                     time.sleep(random.uniform(1.0, 2.5))
 
-        # Fallback to Bing if Google returned nothing
-        if not results:
-            bing_results = self._bing_search(query, limit)
+        # Backfill remaining quota with Bing, then DuckDuckGo.
+        # These must run even when Google returned partial (not only empty)
+        # results, otherwise the requested limit is never reached.
+        remaining = limit - len(results)
+        if remaining > 0:
+            bing_results = self._bing_search(query, remaining)
             results.extend(bing_results)
 
-        # Fallback to DuckDuckGo if still nothing
-        if not results:
-            ddg_results = self._duckduckgo_search(query, limit)
+        remaining = limit - len(results)
+        if remaining > 0:
+            ddg_results = self._duckduckgo_search(query, remaining)
             results.extend(ddg_results)
 
         # Deduplicate by URL

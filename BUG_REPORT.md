@@ -93,10 +93,13 @@ Generated: 2026-06-14
 | Module | Tests | Status |
 |--------|-------|--------|
 | scraper/views.py (API) | 60 | ✅ All endpoints covered |
-| sentiment_service.py | 27 | ✅ Unit tests |
+| sentiment_service.py | 35 | ✅ Unit tests (incl. Indonesian news keywords) |
 | web_scraper_service.py | 30 | ✅ Unit tests |
 | cache_utils.py + rate_limiter.py | 13 | ✅ Unit tests |
-| **Total** | **130** | **All passing** |
+| search_engine_service.py | 6 | ✅ Fallback/backfill logic |
+| surfer/views.py (AI analyze) | 2 | ✅ Model reporting |
+| socrapper/middleware.py | 3 | ✅ Request logging |
+| **Total** | **149** | **All passing** |
 
 Run with: `python -m pytest tests/ -v`
 
@@ -106,5 +109,5 @@ Run with: `python -m pytest tests/ -v`
 2. ~~Add atomic update for popular searches~~ ✅ Done
 3. ~~Add missing query validation~~ ✅ Done
 4. ~~Standardize analysis response keys~~ ✅ Done
-5. **Add pytest to CI/CD** — tests exist now, automate them
-6. **Add request logging** for debugging production issues
+5. ~~Add pytest to CI/CD~~ ✅ Done — `.github/workflows/deploy.yml` runs the full suite in a `test` job that must pass before `deploy`
+6. ~~Add request logging~~ ✅ Done — `socrapper/middleware.py` logs every request (method, path, status, duration) via the `socrapper` logger

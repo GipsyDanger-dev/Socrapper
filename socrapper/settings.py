@@ -2,7 +2,10 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# override=True makes the project .env the source of truth even when the
+# same variables exist in the shell/OS environment (e.g. stray LLM_* vars
+# set in Windows user environment variables would otherwise shadow .env).
+load_dotenv(override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -35,6 +38,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "socrapper.middleware.RequestLoggingMiddleware",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL", "False").lower() in ("true", "1", "yes")
@@ -114,7 +118,7 @@ REST_FRAMEWORK = {
 # LLM Configuration
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
-LLM_MODEL = os.getenv("LLM_MODEL", "mimo-v2.5-pro")
+LLM_MODEL = os.getenv("LLM_MODEL", "")  # bisa berupa rantai fallback dipisah koma
 
 # Exports directory
 EXPORTS_DIR = BASE_DIR / "exports"
@@ -164,6 +168,11 @@ LOGGING = {
         "django": {
             "handlers": ["console"],
             "level": os.getenv("DJANGO_LOG_LEVEL", "WARNING"),
+            "propagate": False,
+        },
+        "socrapper": {
+            "handlers": ["console"],
+            "level": "INFO",
             "propagate": False,
         },
         "scraper": {

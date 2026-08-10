@@ -4,6 +4,7 @@ Tests request validation, response format, error handling.
 """
 
 import json
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -437,6 +438,67 @@ class TestAiAnalyzeEndpoint:
             format="json",
         )
         assert response.status_code == 400
+
+    def test_reports_primary_model_when_no_fallback(self, client, monkeypatch):
+        """Without fallback, the response reports the configured model.
+
+        NOTE: surfer.views must be imported inside the test (not at module
+        level). The autouse disable_api_throttling fixture only works when
+        DRF view classes are built lazily — a module-level import builds them
+        at collection time with AnonRateThrottle still enabled, causing 429s.
+        """
+        import surfer.views as views
+
+        class FakeLLM:
+            models = ["primary-model"]
+            last_model = None
+
+            def is_configured(self):
+                return True
+
+            def analyze_general(self, query, articles):
+                return {"query": query, "analysis": "ok"}
+
+        monkeypatch.setattr(views, "llm_service", FakeLLM())
+        response = client.post(
+            "/api/surf/ai-analyze",
+            {
+                "query": "test",
+                "articles": [{"title": "a"}],
+                "type": "general",
+            },
+            format="json",
+        )
+        assert response.status_code == 200
+        assert response.data["model"] == "primary-model"
+
+    def test_reports_fallback_model_when_used(self, client, monkeypatch):
+        """When the primary model failed and a fallback succeeded, the
+        response must report the fallback, not the primary."""
+        import surfer.views as views
+
+        class FakeLLM:
+            models = ["primary-model", "fallback-model"]
+            last_model = "fallback-model"
+
+            def is_configured(self):
+                return True
+
+            def analyze_general(self, query, articles):
+                return {"query": query, "analysis": "ok"}
+
+        monkeypatch.setattr(views, "llm_service", FakeLLM())
+        response = client.post(
+            "/api/surf/ai-analyze",
+            {
+                "query": "test",
+                "articles": [{"title": "a"}],
+                "type": "general",
+            },
+            format="json",
+        )
+        assert response.status_code == 200
+        assert response.data["model"] == "fallback-model"
 
 
 # ============================================================

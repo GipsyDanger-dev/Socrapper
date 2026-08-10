@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 class SentimentService:
     POSITIVE_KEYWORDS = [
+        # Original English + Indonesian
         "bagus",
         "mantap",
         "hebat",
@@ -24,9 +25,38 @@ class SentimentService:
         "sempurna",
         "terbaik",
         "sungguh",
+        # Indonesian news/price context
+        "membaik",
+        "pulih",
+        "sukses",
+        "berhasil",
+        "menang",
+        "juara",
+        "stabil",
+        "aman",
+        "lancar",
+        "menguntungkan",
+        "diskon",
+        "promo",
+        "gratis",
+        "murah",
+        "terjangkau",
+        "prestasi",
+        "membanggakan",
+        "bangga",
+        "bahagia",
+        "senang",
+        "inovatif",
+        "canggih",
+        "harga turun",
+        "penurunan harga",
+        "bbm turun",
+        "kabar baik",
+        "berita baik",
     ]
 
     NEGATIVE_KEYWORDS = [
+        # Original
         "buruk",
         "jelek",
         "kecewa",
@@ -45,6 +75,66 @@ class SentimentService:
         "parah",
         "tidak suka",
         "sangat marah",
+        # Bencana & kecelakaan
+        "terbakar",
+        "kebakaran",
+        "korsleting",
+        "meledak",
+        "ledakan",
+        "korban",
+        "tewas",
+        "meninggal",
+        "kecelakaan",
+        "musibah",
+        "bencana",
+        "banjir",
+        "longsor",
+        "gempa",
+        "tragis",
+        "darurat",
+        "luka",
+        "luka bakar",
+        "meninggal dunia",
+        # Protes & ketidakpuasan
+        "protes",
+        "demonstrasi",
+        "mogok",
+        "aksi unjuk rasa",
+        "keluhan",
+        "menolak",
+        "mengeluh",
+        # Ekonomi negatif
+        "kelangkaan",
+        "antrean",
+        "sanksi",
+        "larangan",
+        "penunggak",
+        "krisis",
+        "gagal",
+        "kerugian",
+        "bangkrut",
+        "gulung tikar",
+        "harga naik",
+        "kenaikan harga",
+        "bbm naik",
+        "mahal",
+        # Kejahatan & sosial
+        "korupsi",
+        "penipuan",
+        "kekerasan",
+        "konflik",
+        "polusi",
+        "pencemaran",
+        "perang",
+        "kriminal",
+        # Risiko & bahaya
+        "ancaman",
+        "bahaya",
+        "berbahaya",
+        "rawan",
+        "mencemaskan",
+        "mengkhawatirkan",
+        "menyedihkan",
     ]
 
     NEGATION_WORDS = [
@@ -133,6 +223,7 @@ Jangan tambahkan teks lain di luar JSON."""
 
             parsed = self._parse_json(response)
             if parsed and "results" in parsed and "summary" in parsed:
+                parsed["model"] = getattr(llm, "last_model", None) or llm.model
                 return parsed
 
             return None
@@ -207,13 +298,23 @@ Jangan tambahkan teks lain di luar JSON."""
         multi_word_negative = [k for k in self.NEGATIVE_KEYWORDS if " " in k]
         single_word_negative = [k for k in self.NEGATIVE_KEYWORDS if " " not in k]
 
+        # Multi-word phrases also honor negation, e.g. "tidak ada kenaikan harga"
+        # means prices did NOT rise -> should not count as negative.
         for keyword in multi_word_positive:
             pattern = r"\b" + re.escape(keyword) + r"\b"
-            positive_count += len(re.findall(pattern, text_lower))
+            for match in re.finditer(pattern, text_lower):
+                if self._is_negated(text_lower[: match.start()]):
+                    negative_count += 1
+                else:
+                    positive_count += 1
 
         for keyword in multi_word_negative:
             pattern = r"\b" + re.escape(keyword) + r"\b"
-            negative_count += len(re.findall(pattern, text_lower))
+            for match in re.finditer(pattern, text_lower):
+                if self._is_negated(text_lower[: match.start()]):
+                    positive_count += 1
+                else:
+                    negative_count += 1
 
         for keyword in single_word_positive:
             pattern = r"\b" + re.escape(keyword) + r"\b"

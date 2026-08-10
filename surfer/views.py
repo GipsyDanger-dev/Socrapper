@@ -138,12 +138,17 @@ def ai_analyze(request):
         else:
             result = llm_service.analyze_general(query, articles)
 
+        # Report the model that actually produced the analysis. With a
+        # fallback chain (LLM_MODEL="model-a,model-b"), the primary model may
+        # have failed and last_model holds the one that succeeded.
+        primary_model = llm_service.models[0] if llm_service.models else getattr(settings, "LLM_MODEL", "")
+        model_used = llm_service.last_model or primary_model
         return Response(
             {
                 "success": True,
                 "ai_analysis": result,
                 "type": analysis_type,
-                "model": getattr(settings, "LLM_MODEL", "mimo-v2.5-pro"),
+                "model": model_used,
             }
         )
     except Exception as e:

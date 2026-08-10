@@ -71,6 +71,62 @@ class TestDetectSentiment:
         assert result in ("positive", "negative"), "Double negation is ambiguous"
 
 
+class TestIndonesianNewsKeywords:
+    """Test that common Indonesian news vocabulary is detected correctly.
+
+    Regression tests for the bug where news about fires/disasters/prices
+    was always classified as 'neutral' because the keyword dictionary only
+    contained generic sentiment words.
+    """
+
+    def test_fire_news_negative(self, service):
+        result = service._detect_sentiment(
+            "Mobil Terbakar Saat Isi BBM di SPBU Kota Bogor Diduga Akibat Korsleting Aki"
+        )
+        assert result == "negative"
+
+    def test_kiosk_fire_negative(self, service):
+        result = service._detect_sentiment(
+            "Kios BBM Eceran Terbakar, Satu Warga Alami Luka Bakar dan Dilarikan ke Rumah Sakit"
+        )
+        assert result == "negative"
+
+    def test_disaster_news_negative(self, service):
+        result = service._detect_sentiment(
+            "Penampakan SPBU Cemplang Bogor Kebakaran, Dua Dispenser BBM dan Satu Mobil Hangus"
+        )
+        assert result == "negative"
+
+    def test_price_increase_negative(self, service):
+        result = service._detect_sentiment("Harga BBM Naik, Warga Protes dan Kecewa")
+        assert result == "negative"
+
+    def test_price_decrease_positive(self, service):
+        result = service._detect_sentiment("Harga BBM Turun, Cek Daftar Terbaru Agustus 2026")
+        assert result == "positive"
+
+    def test_scarcity_negative(self, service):
+        result = service._detect_sentiment("Kelangkaan BBM di daerah terpencil")
+        assert result == "negative"
+
+    def test_multiword_negation_flips_to_positive(self, service):
+        """'Tidak ada kenaikan harga' = prices did NOT rise -> positive."""
+        result = service._detect_sentiment("Tidak ada kenaikan harga BBM bulan ini")
+        assert result == "positive"
+
+    def test_real_news_distribution(self, service):
+        """The actual BBM news mix should no longer be 100% neutral."""
+        texts = [
+            "Mobil Terbakar Saat Isi BBM di SPBU Kota Bogor Diduga Akibat Korsleting Aki",
+            "Kios BBM Eceran Terbakar, Satu Warga Alami Luka Bakar dan Dilarikan ke Rumah Sakit",
+            "Harga BBM Turun, Cek Daftar Terbaru Agustus 2026",
+            "Penampakan SPBU Cemplang Bogor Kebakaran, Dua Dispenser BBM dan Satu Mobil Hangus",
+        ]
+        result = service._analyze_with_keywords(texts)
+        assert result["negative"] >= 3
+        assert result["positive"] >= 1
+
+
 class TestCalculateConfidence:
     """Test confidence score calculation."""
 

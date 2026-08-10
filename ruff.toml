@@ -1,0 +1,25 @@
+# Ruff linter configuration.
+#
+# Rule set: E (pycodestyle errors) + F (pyflakes). These catch real bugs
+# (unused imports, undefined names, basic style) without bikeshedding on
+# style. E501 (line length) is ignored because this scraper codebase has
+# many long URL/user-agent strings that are fine at 120 chars.
+#
+# Run locally:  ruff check .
+# Run in CI:    ruff check . (see .github/workflows/deploy.yml lint job)
+
+line-length = 120
+target-version = "py310"
+
+# extend-exclude (not exclude) so ruff keeps its default exclusions
+# (.venv, .git, build, dist, etc.) and adds only project-specific ones.
+extend-exclude = [
+    "**/migrations",
+    "node_modules",
+    "public",
+    "staticfiles",
+]
+
+[lint]
+select = ["E", "F"]
+ignore = ["E501"]
