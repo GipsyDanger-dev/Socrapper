@@ -8,36 +8,43 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: 22
-          script: |
-            cd /www/wwwroot/socrapper
-            echo "[DEPLOY] Pulling latest code..."
+      - name: Deploy to VPS via SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ubuntu
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST "
+            export PATH=/home/ubuntu/.local/bin:/home/ubuntu/.hermes/node/bin:\$PATH
+            cd /home/ubuntu/socrapper
+            echo '[DEPLOY] Pulling latest code...'
             git fetch origin main
             git reset --hard origin/main
 
-            echo "[DEPLOY] Installing Python dependencies..."
-            source venv/bin/activate
-            pip install -r requirements.txt -q
+            echo '[DEPLOY] Installing Python dependencies...'
+            python3 -m pip install -r requirements.txt -q
 
-            echo "[DEPLOY] Running migrations..."
-            python manage.py migrate --noinput
+            echo '[DEPLOY] Running migrations...'
+            python3 manage.py migrate --noinput
 
-            echo "[DEPLOY] Collecting static files..."
-            python manage.py collectstatic --noinput
-
-            echo "[DEPLOY] Installing npm packages..."
+            echo '[DEPLOY] Installing npm packages & building frontend...'
             npm install --silent
-
-            echo "[DEPLOY] Building frontend..."
             npm run build
 
-            echo "[DEPLOY] Restarting Gunicorn..."
+            echo '[DEPLOY] Collecting static files...'
+            python3 manage.py collectstatic --noinput
+
+            echo '[DEPLOY] Syncing static & build assets for Caddy...'
+            mkdir -p /var/www/socrapper/build /var/www/socrapper/static
+            cp -r public/build/* /var/www/socrapper/build/ 2>/dev/null || true
+            cp -r staticfiles/* /var/www/socrapper/static/ 2>/dev/null || true
+
+            echo '[DEPLOY] Restarting Socrapper service...'
             sudo systemctl restart socrapper
 
-            echo "[DEPLOY] Done! Site updated."
+            echo '[DEPLOY] Done! Socrapper successfully updated.'
+          "
