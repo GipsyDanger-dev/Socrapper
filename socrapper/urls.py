@@ -1,5 +1,6 @@
 from django.urls import path, include
 from django.http import JsonResponse, HttpResponse
+from django.contrib import admin
 
 
 def api_root(request):
@@ -30,6 +31,7 @@ def sitemap_xml(request):
 
 urlpatterns = [
     path("", api_root),
+    path("admin/", admin.site.urls),
     path("robots.txt", robots_txt),
     path("sitemap.xml", sitemap_xml),
     path("google1289e1e5d73483a9.html", google_verification),

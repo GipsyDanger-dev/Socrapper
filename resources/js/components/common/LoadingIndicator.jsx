@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const STAGES = [
     { key: 'collecting', label: 'mengumpulkan', progress: 100 },
+    { key: 'extracting', label: 'mengekstrak', progress: 100 },
     { key: 'analyzing', label: 'menganalisis', progress: 100 },
     { key: 'assembling', label: 'menyusun', progress: 100 },
 ];
@@ -13,6 +14,12 @@ const STATUS_MESSAGES = {
         'menyisir Google News & web...',
         'mengambil headline terbaru...',
         'mencari hasil di banyak platform...',
+    ],
+    extracting: [
+        'mengambil isi artikel...',
+        'memisahkan teks dari HTML...',
+        'menyimpan kutipan & gambar...',
+        'menyaring konten yang relevan...',
     ],
     analyzing: [
         'membaca setiap baris teks...',
@@ -45,7 +52,7 @@ function getStageIndex(stage) {
     return idx >= 0 ? idx : -1;
 }
 
-export default function LoadingIndicator({ show, keyword, stage }) {
+export default function LoadingIndicator({ show, keyword, stage, liveMessage }) {
     const currentIdx = getStageIndex(stage);
     const [typeIdx, setTypeIdx] = useState(0);
     const [msgIdx, setMsgIdx] = useState(0);
@@ -94,7 +101,9 @@ export default function LoadingIndicator({ show, keyword, stage }) {
     if (!show) return null;
 
     const activeMsgs = STATUS_MESSAGES[stage] || STATUS_MESSAGES.collecting;
-    const statusText = activeMsgs[msgIdx % activeMsgs.length];
+    // When the server streams a live progress message, show it instead of
+    // the rotating placeholder lines.
+    const statusText = liveMessage || activeMsgs[msgIdx % activeMsgs.length];
     const tickerLine = ACTIVITY_TICKER[tickerIdx % ACTIVITY_TICKER.length];
 
     return (
@@ -143,7 +152,7 @@ export default function LoadingIndicator({ show, keyword, stage }) {
             {/* Rotating status line */}
             <div className="ld-status">
                 <span className="ld-status-dots" aria-hidden="true"><i /><i /><i /></span>
-                <span key={msgIdx} className="ld-status-text">{statusText}</span>
+                <span key={liveMessage ? 'live' : msgIdx} className="ld-status-text">{statusText}</span>
             </div>
 
             {/* Activity ticker */}

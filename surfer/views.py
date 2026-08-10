@@ -1,11 +1,18 @@
+import json
+import time
 import logging
+import threading
+from collections import Counter
+
+from django.conf import settings
+from django.http import StreamingHttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.conf import settings
 
 from .services.internet_surfer_service import InternetSurferService
 from .services.content_extractor_service import ContentExtractorService
 from .services.llm_analysis_service import LLMAnalysisService
+from .services.job_manager import job_manager
 from scraper.views import track_search
 
 logger = logging.getLogger(__name__)
@@ -106,6 +113,201 @@ def extract_url(request):
     except Exception as e:
         logger.error(f"Extract URL error: {e}")
         return Response({"success": False, "error": "An internal error occurred"}, status=500)
+
+
+@api_view(["POST"])
+def start_surf(request):
+    """Start a surf job in the background; returns a job_id to stream from."""
+    query = request.data.get("query")
+    if not query:
+        return Response({"success": False, "error": "query is required"}, status=400)
+    if len(query) > 500:
+        return Response({"success": False, "error": "Query too long (max 500 chars)"}, status=400)
+
+    mode = request.data.get("mode", "full")
+    search_limit = request.data.get("search_limit", 20)
+    extract_content = request.data.get("extract_content", True)
+    analyze_sentiment = request.data.get("analyze_sentiment", True)
+
+    try:
+        search_limit = int(search_limit)
+        if search_limit < 1 or search_limit > 100:
+            return Response({"success": False, "error": "search_limit must be 1-100"}, status=400)
+    except (TypeError, ValueError):
+        return Response({"success": False, "error": "search_limit must be a valid integer"}, status=400)
+
+    try:
+        limit = int(request.data.get("limit", 15))
+        if limit < 1 or limit > 50:
+            limit = 15
+    except (TypeError, ValueError):
+        limit = 15
+
+    try:
+        pages = int(request.data.get("pages", 3))
+        if pages < 1 or pages > 5:
+            pages = 3
+    except (TypeError, ValueError):
+        pages = 3
+
+    track_search(query)
+
+    job_id = job_manager.create("surf")
+    emit = lambda stage, message, data=None: job_manager.emit(job_id, stage, message, data)  # noqa: E731
+
+    def run():
+        try:
+            if mode == "quick":
+                result = surfer_service.quick_surf(query, limit, progress_cb=emit)
+            elif mode == "deep":
+                result = surfer_service.deep_surf(query, pages, progress_cb=emit)
+            else:
+                result = surfer_service.surf(
+                    query,
+                    {
+                        "search_limit": search_limit,
+                        "extract_content": extract_content,
+                        "analyze_sentiment": analyze_sentiment,
+                    },
+                    progress_cb=emit,
+                )
+            if result.get("success"):
+                job_manager.finish(job_id, result)
+            else:
+                job_manager.fail(job_id, result.get("error", "Surf failed"))
+        except Exception as e:
+            logger.error(f"Surf job {job_id} crashed: {e}")
+            job_manager.fail(job_id, str(e))
+
+    threading.Thread(target=run, daemon=True).start()
+
+    return Response({"success": True, "job_id": job_id, "status": "running"})
+
+
+def surf_events(request, job_id):
+    """Server-Sent Events stream of progress for a surf job."""
+
+    def sse(payload, seq):
+        return f"id: {seq}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+    def event_stream():
+        last_index = 0
+        seq = 0
+        elapsed = 0.0
+        poll_interval = 0.5
+        max_wait = 300.0
+
+        while elapsed < max_wait:
+            job = job_manager.get(job_id)
+            if job is None:
+                payload = {
+                    "stage": "error",
+                    "message": "Job tidak ditemukan",
+                    "final": True,
+                    "status": {"status": "error", "error": "Job not found"},
+                }
+                yield sse(payload, seq)
+                return
+
+            for event in job["events"][last_index:]:
+                last_index += 1
+                payload = dict(event)
+                payload["final"] = False
+                payload["status"] = None
+                yield sse(payload, seq)
+                seq += 1
+
+            if job["status"] in ("done", "error"):
+                payload = {
+                    "stage": "done" if job["status"] == "done" else "error",
+                    "message": "Selesai!" if job["status"] == "done" else (job["error"] or "Gagal"),
+                    "final": True,
+                    "status": {"status": job["status"], "result": job["result"], "error": job["error"]},
+                }
+                yield sse(payload, seq)
+                return
+
+            time.sleep(poll_interval)
+            elapsed += poll_interval
+
+        payload = {
+            "stage": "error",
+            "message": "Timeout",
+            "final": True,
+            "status": {"status": "error", "error": "timeout"},
+        }
+        yield sse(payload, seq)
+
+    response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+@api_view(["GET"])
+def surf_status(request, job_id):
+    """JSON snapshot of a surf job (polling fallback for EventSource)."""
+    job = job_manager.get(job_id)
+    if job is None:
+        return Response({"success": False, "status": "error", "error": "Job not found"}, status=404)
+    return Response(
+        {
+            "success": True,
+            "status": job["status"],
+            "error": job["error"],
+            "result": job["result"],
+            "last_event": job["events"][-1] if job["events"] else None,
+        }
+    )
+
+
+@api_view(["POST"])
+def compare(request):
+    """Compare sentiment across 2-4 keywords (search only, no extraction)."""
+    queries = request.data.get("queries")
+    if not queries or not isinstance(queries, list):
+        return Response({"success": False, "error": "queries array is required"}, status=400)
+
+    queries = [str(q).strip() for q in queries if str(q).strip()]
+    if len(queries) < 2:
+        return Response({"success": False, "error": "Minimal 2 keyword untuk dibandingkan"}, status=400)
+    if len(queries) > 4:
+        return Response({"success": False, "error": "Maksimal 4 keyword"}, status=400)
+
+    comparisons = []
+    for query in queries:
+        item = {"query": query}
+        try:
+            quick = surfer_service.quick_surf(query, 15)
+            results = quick.get("results", [])
+            item["total"] = len(results)
+
+            texts = [
+                f"{r.get('title', '')}. {r.get('snippet', '')}" for r in results if r.get("title") or r.get("snippet")
+            ]
+            # Keyword-based analysis keeps compare fast & deterministic (no LLM
+            # latency per keyword) and always returns the flat count format.
+            sentiment = surfer_service.sentiment_service._analyze_with_keywords(texts) if texts else None
+            counts = {
+                "positive": sentiment.get("positive", 0) if sentiment else 0,
+                "negative": sentiment.get("negative", 0) if sentiment else 0,
+                "neutral": sentiment.get("neutral", 0) if sentiment else 0,
+            }
+            dominant = max(counts, key=counts.get) if any(counts.values()) else "neutral"
+            item["sentiment"] = {**counts, "overall": dominant}
+
+            sources = Counter(r.get("source", "") for r in results if r.get("source"))
+            item["top_sources"] = [{"source": s, "count": c} for s, c in sources.most_common(5)]
+            item["top_topics"] = surfer_service._extract_key_topics(results)
+        except Exception as e:
+            logger.warning(f"Compare '{query}' failed: {e}")
+            item["total"] = 0
+            item["sentiment"] = {"positive": 0, "negative": 0, "neutral": 0, "overall": "neutral"}
+            item["top_sources"] = []
+            item["top_topics"] = []
+        comparisons.append(item)
+
+    return Response({"success": True, "comparisons": comparisons})
 
 
 @api_view(["POST"])

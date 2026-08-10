@@ -176,11 +176,21 @@ class InternetSurferService:
         clean = re.sub(r"\n\s*\n", "\n", clean)
         return clean.strip()
 
-    def surf(self, query, options=None):
+    @staticmethod
+    def _emit(progress_cb, stage, message, data=None):
+        if progress_cb:
+            try:
+                progress_cb(stage, message, data)
+            except Exception:
+                logger.warning("Progress callback failed", exc_info=True)
+
+    def surf(self, query, options=None, progress_cb=None):
         options = options or {}
         search_limit = options.get("search_limit", 5)
         extract_content = options.get("extract_content", True)
         analyze_sentiment = options.get("analyze_sentiment", True)
+
+        emit = lambda stage, message, data=None: self._emit(progress_cb, stage, message, data)  # noqa: E731
 
         # Generate cache key
         cache_key = hashlib.md5(
@@ -196,7 +206,9 @@ class InternetSurferService:
             return cached
 
         try:
+            emit("collecting", "menghubungi mesin pencari & Google News...")
             search_results = self.search_engine.search(query, search_limit)
+            emit("collecting", f"{len(search_results)} hasil ditemukan dari mesin pencari")
 
             if not search_results:
                 return {
@@ -209,7 +221,10 @@ class InternetSurferService:
 
             extracted_data = []
             if extract_content and fetchable_urls:
+                emit("extracting", f"mengekstrak konten dari {len(fetchable_urls)} artikel...")
                 extracted_data = self.content_extractor.extract_multiple(fetchable_urls)
+                extracted_count = sum(1 for e in extracted_data if e and e.get("success"))
+                emit("extracting", f"{extracted_count} artikel berhasil diekstrak")
 
             merged_results = self._merge_results(search_results, extracted_data)
 
@@ -225,7 +240,15 @@ class InternetSurferService:
                         text_indices.append(i)
 
                 if texts:
+                    emit("analyzing", f"mendeteksi sentimen dari {len(texts)} artikel...")
                     sentiment_analysis = self.sentiment_service.analyze_sentiments(texts)
+                    if sentiment_analysis:
+                        emit(
+                            "analyzing",
+                            f"sentimen: {sentiment_analysis.get('positive', 0)} positif, "
+                            f"{sentiment_analysis.get('negative', 0)} negatif, "
+                            f"{sentiment_analysis.get('neutral', 0)} netral",
+                        )
                     # Attach sentiment to each merged result that was analyzed
                     if sentiment_analysis and "results" in sentiment_analysis:
                         for j, idx in enumerate(text_indices):
@@ -234,7 +257,9 @@ class InternetSurferService:
                                 merged_results[idx]["sentiment"] = sent_item.get("sentiment", "neutral")
                                 merged_results[idx]["sentiment_confidence"] = sent_item.get("confidence", 0)
 
+            emit("assembling", "menyusun ringkasan & laporan...")
             summary = self._generate_summary(query, merged_results, sentiment_analysis)
+            emit("done", "selesai!")
 
             result = {
                 "success": True,
@@ -259,9 +284,10 @@ class InternetSurferService:
                 "query": query,
             }
 
-    def deep_surf(self, query, pages=3):
+    def deep_surf(self, query, pages=3, progress_cb=None):
         all_results = []
         per_query_limit = max(15, pages * 10)
+        emit = lambda stage, message, data=None: self._emit(progress_cb, stage, message, data)  # noqa: E731
 
         # Generate diverse query variations for broader coverage
         queries = [
@@ -275,6 +301,7 @@ class InternetSurferService:
 
         for q in queries:
             try:
+                emit("collecting", f"mencari '{q}'...")
                 results = self.surf(
                     q,
                     {
@@ -282,6 +309,7 @@ class InternetSurferService:
                         "extract_content": True,
                         "analyze_sentiment": False,
                     },
+                    progress_cb=progress_cb,
                 )
                 if results.get("success"):
                     all_results.extend(results.get("merged_results", []))
@@ -324,7 +352,7 @@ class InternetSurferService:
             "summary": self._generate_summary(query, unique_results, sentiment),
         }
 
-    def quick_surf(self, query, limit=5):
+    def quick_surf(self, query, limit=5, progress_cb=None):
         # Check cache
         cache_key = hashlib.md5(f"quick:{query}:{limit}".encode()).hexdigest()
         from scraper.services.cache_utils import search_cache
@@ -333,7 +361,11 @@ class InternetSurferService:
         if cached:
             return cached
 
+        emit = lambda stage, message, data=None: self._emit(progress_cb, stage, message, data)  # noqa: E731
+        emit("collecting", f"mencari {limit} hasil untuk '{query}'...")
         search_results = self.search_engine.search(query, limit)
+        emit("collecting", f"{len(search_results)} hasil ditemukan")
+        emit("done", "selesai!")
 
         result = {
             "success": True,

@@ -4,6 +4,8 @@ import RawDataTab from '../components/tabs/RawDataTab';
 import SentimentTab from '../components/tabs/SentimentTab';
 import HistoryTab from '../components/tabs/HistoryTab';
 import SurfResultsTab from '../components/tabs/SurfResultsTab';
+import WordCloudTab from '../components/tabs/WordCloudTab';
+import ComparePanel from '../components/layout/ComparePanel';
 import AiAnalysisCard from '../components/layout/AiAnalysisCard';
 import LoadingIndicator from '../components/common/LoadingIndicator';
 import HomeContent from '../components/layout/HomeContent';
@@ -66,6 +68,7 @@ export default function App() {
     const [currentMode, setCurrentMode] = useState('scraper');
     const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
     const [loadingStage, setLoadingStage] = useState(null);
+    const [liveMessage, setLiveMessage] = useState('');
     const [toast, setToast] = useState({ message: '', type: 'error' });
 
     // Surf state
@@ -145,32 +148,92 @@ export default function App() {
         }
     };
 
+    // Streams a surf job via SSE, falling back to polling if EventSource fails.
+    const streamSurfJob = (jobId) => new Promise((resolve, reject) => {
+        let settled = false;
+        const finish = (fn, value) => { if (!settled) { settled = true; fn(value); } };
+
+        const applyEvent = (evt) => {
+            if (!evt || !evt.stage) return;
+            const stage = evt.stage === 'done' ? 'assembling' : evt.stage;
+            setLoadingStage(stage);
+            if (evt.message) setLiveMessage(evt.message);
+        };
+
+        const poll = () => {
+            // Hard cap so a hung job can never leave the UI loading forever.
+            const MAX_POLLS = 120; // 120 × 1.5s = ~3 minutes
+            let attempts = 0;
+            const iv = setInterval(async () => {
+                attempts += 1;
+                try {
+                    const st = await fetchJSON(`/api/surf/status/${jobId}`, { timeout: 15000 });
+                    if (st.last_event) applyEvent(st.last_event);
+                    if (st.status === 'done') {
+                        clearInterval(iv);
+                        finish(resolve, st.result);
+                    } else if (st.status === 'error') {
+                        clearInterval(iv);
+                        finish(reject, new Error(st.error || 'Gagal surfing'));
+                    } else if (attempts >= MAX_POLLS) {
+                        clearInterval(iv);
+                        finish(reject, new Error('Waktu tunggu habis — coba lagi'));
+                    }
+                } catch (err) {
+                    clearInterval(iv);
+                    finish(reject, err);
+                }
+            }, 1500);
+        };
+
+        let es = null;
+        try { es = new EventSource(`/api/surf/events/${jobId}`); } catch { es = null; }
+
+        if (es) {
+            es.onmessage = (e) => {
+                try {
+                    const evt = JSON.parse(e.data);
+                    applyEvent(evt);
+                    if (evt.final && evt.status) {
+                        es.close();
+                        if (evt.status.status === 'done') finish(resolve, evt.status.result);
+                        else finish(reject, new Error(evt.status.error || 'Gagal surfing'));
+                    }
+                } catch { /* ignore malformed frames */ }
+            };
+            es.onerror = () => {
+                if (es) es.close();
+                if (!settled) poll();
+            };
+        } else {
+            poll();
+        }
+    });
+
     const handleSurf = async (query, options) => {
         setLoading(true);
         setLoadingStage('collecting');
+        setLiveMessage('');
         setCurrentKeyword(query);
         setCurrentMode('surfer');
         setData([]);
         setAnalysis(null);
         setStatistics(null);
+        setSurfResults(null);
+
+        let body = { query, mode: options.mode || 'full' };
+        if (options.mode === 'quick') {
+            body.limit = options.searchLimit;
+        } else if (options.mode === 'deep') {
+            body.pages = 3;
+        } else {
+            body.search_limit = options.searchLimit;
+            body.extract_content = options.extractContent;
+            body.analyze_sentiment = options.analyzeSentiment;
+        }
 
         try {
-            let endpoint = '/api/surf';
-            let body = { query };
-
-            if (options.mode === 'quick') {
-                endpoint = '/api/surf/quick';
-                body.limit = options.searchLimit;
-            } else if (options.mode === 'deep') {
-                endpoint = '/api/surf/deep';
-                body.pages = 3;
-            } else {
-                body.search_limit = options.searchLimit;
-                body.extract_content = options.extractContent;
-                body.analyze_sentiment = options.analyzeSentiment;
-            }
-
-            const result = await fetchJSON(endpoint, {
+            const startRes = await fetchJSON('/api/surf/start', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -178,24 +241,26 @@ export default function App() {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: JSON.stringify(body),
-                timeout: 120000,
+                timeout: 15000,
             });
 
-            if (result.success) {
-                setLoadingStage('assembling');
-                setSurfResults(result);
-                setAnalysis(result.sentiment || null);
-                setAiAnalysis(null);
-                setActiveTab('surf-results');
-            } else {
-                showToast(result.error || 'Gagal surfing');
+            if (!startRes.success || !startRes.job_id) {
+                showToast(startRes.error || 'Gagal memulai surfing');
+                return;
             }
+
+            const result = await streamSurfJob(startRes.job_id);
+            setSurfResults(result);
+            setAnalysis(result.sentiment || null);
+            setAiAnalysis(null);
+            setActiveTab('surf-results');
         } catch (error) {
             console.error('Surf error:', error);
             showToast(error.name === 'AbortError' ? 'Request timeout — coba lagi' : error.message);
         } finally {
             setLoading(false);
             setLoadingStage(null);
+            setLiveMessage('');
         }
     };
 
@@ -370,6 +435,9 @@ export default function App() {
             {/* Input */}
             <InputSection onScrape={handleScrape} onSurf={handleSurf} />
 
+            {/* Keyword comparison tool */}
+            <ComparePanel />
+
             {/* Home content (before scraping) */}
             {!hasData && (
                 <div className="home-grid">
@@ -383,7 +451,7 @@ export default function App() {
             )}
 
             {/* Loading */}
-            <LoadingIndicator show={loading} keyword={currentKeyword} stage={loadingStage} />
+            <LoadingIndicator show={loading} keyword={currentKeyword} stage={loadingStage} liveMessage={liveMessage} />
 
             {/* Main content */}
             <main id="main-content">
@@ -422,6 +490,15 @@ export default function App() {
                                     </button>
                                     <button
                                         role="tab"
+                                        aria-selected={activeTab === 'wordcloud'}
+                                        aria-controls="panel-wordcloud"
+                                        className={`tab ${activeTab === 'wordcloud' ? 'on' : ''}`}
+                                        onClick={() => setActiveTab('wordcloud')}
+                                    >
+                                        Kata
+                                    </button>
+                                    <button
+                                        role="tab"
                                         aria-selected={activeTab === 'history'}
                                         aria-controls="panel-history"
                                         className={`tab ${activeTab === 'history' ? 'on' : ''}`}
@@ -452,6 +529,15 @@ export default function App() {
                                             Sentimen
                                         </button>
                                     )}
+                                    <button
+                                        role="tab"
+                                        aria-selected={activeTab === 'wordcloud'}
+                                        aria-controls="panel-wordcloud"
+                                        className={`tab ${activeTab === 'wordcloud' ? 'on' : ''}`}
+                                        onClick={() => setActiveTab('wordcloud')}
+                                    >
+                                        Kata
+                                    </button>
                                 </>
                             )}
                             <span className="tab-rc" aria-live="polite">
@@ -497,6 +583,20 @@ export default function App() {
                                     key={historyRefreshKey}
                                     onLoadHistory={handleLoadHistory}
                                     onRefresh={() => setHistoryRefreshKey(k => k + 1)}
+                                />
+                            </div>
+                        )}
+
+                        {/* PANEL: Word Cloud */}
+                        {activeTab === 'wordcloud' && (
+                            <div role="tabpanel" id="panel-wordcloud">
+                                <WordCloudTab
+                                    texts={
+                                        currentMode === 'scraper'
+                                            ? data.map(d => [d.text, d.title, d.snippet].filter(Boolean).join(' '))
+                                            : (surfResults?.merged_results || surfResults?.results || [])
+                                                .map(r => [r.title, r.snippet, r.content_excerpt].filter(Boolean).join(' '))
+                                    }
                                 />
                             </div>
                         )}
