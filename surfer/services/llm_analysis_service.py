@@ -1,10 +1,18 @@
 import re
 import json
+import time
 import logging
 import threading
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
+# Bound each LLM request so a hung/unresponsive free endpoint does not stall
+# the whole fallback chain (OpenAI SDK default is 10 minutes).
+REQUEST_TIMEOUT_SECONDS = 60.0
+# Pause between failed models so the chain keeps moving without hammering
+# the provider with instant retries.
+RETRY_DELAY_SECONDS = 0.5
 
 
 class LLMAnalysisService:
@@ -19,8 +27,13 @@ class LLMAnalysisService:
         # "google/gemma-4-31b-it:free,openai/gpt-oss-20b:free". Free-tier
         # endpoints are often rate-limited or temporarily unavailable, so
         # trying the next model keeps AI analysis working.
-        self.models = [m.strip() for m in self.model.split(",") if m.strip()]
+        self.models = self.parse_models(self.model)
         self.last_model = None
+
+    @staticmethod
+    def parse_models(model):
+        """Split a comma-separated LLM_MODEL string into a clean model list."""
+        return [m.strip() for m in (model or "").split(",") if m.strip()]
 
     def _get_client(self):
         if LLMAnalysisService._client is not None:
@@ -41,6 +54,7 @@ class LLMAnalysisService:
                 api_key=self.api_key,
                 base_url=self.base_url,
                 default_headers=default_headers,
+                timeout=REQUEST_TIMEOUT_SECONDS,
             )
         return LLMAnalysisService._client
 
@@ -50,6 +64,10 @@ class LLMAnalysisService:
     def analyze(self, prompt, system_prompt=""):
         if not self.is_configured():
             logger.warning("LLM not configured. Set LLM_API_KEY and LLM_BASE_URL in .env")
+            return None
+
+        if not self.models:
+            logger.warning("LLM_MODEL is empty; set a fallback model chain (e.g. OpenRouter free models)")
             return None
 
         client = self._get_client()
@@ -74,8 +92,12 @@ class LLMAnalysisService:
                 self.last_model = model
                 return response.choices[0].message.content
             except Exception as e:
+                # Free endpoints usually fail fast (429 rate limit, 404 model
+                # retired) but can also hang — the client timeout covers that.
                 logger.warning(f"LLM analysis error with {model}: {e}")
+                time.sleep(RETRY_DELAY_SECONDS)
 
+        logger.error(f"All {len(self.models)} LLM models failed; falling back to keyword/heuristic analysis")
         return None
 
     def analyze_sentiment(self, texts):

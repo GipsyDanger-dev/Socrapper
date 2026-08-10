@@ -215,8 +215,9 @@ DB_ENGINE=sqlite
 # LLM Configuration (opsional, untuk AI analysis)
 LLM_API_KEY=your-api-key
 LLM_BASE_URL=https://openrouter.ai/api/v1
-# Bisa berupa rantai fallback (dipisah koma) — model berikutnya dicoba jika yang pertama gagal/rate-limited
-LLM_MODEL=google/gemma-4-31b-it:free,openai/gpt-oss-20b:free
+# Bisa berupa rantai fallback (dipisah koma) — model berikutnya dicoba jika yang pertama gagal/rate-limited.
+# `openrouter/free` di akhir adalah router otomatis yang memilih model gratis apa pun yang tersedia.
+LLM_MODEL=google/gemma-4-31b-it:free,openai/gpt-oss-20b:free,nvidia/nemotron-3-super-120b-a12b:free,google/gemma-4-26b-a4b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3-nano-30b-a3b:free,inclusionai/ling-3.0-flash:free,openrouter/free
 
 # Django
 SECRET_KEY=your-secret-key-here
@@ -240,7 +241,9 @@ Supported API:
 - OpenRouter (`https://openrouter.ai/api/v1`) — termasuk model gratis berakhiran `:free`
 - Any OpenAI-compatible API (LocalAI, Ollama, etc)
 
-`LLM_MODEL` bisa berupa rantai fallback yang dipisah koma. Jika model pertama gagal atau kena rate-limit (umum terjadi pada model gratis), model berikutnya akan dicoba otomatis.
+`LLM_MODEL` bisa berupa rantai fallback yang dipisah koma. Jika model pertama gagal atau kena rate-limit (umum terjadi pada model gratis), model berikutnya akan dicoba otomatis sampai ada yang berhasil. Setiap request punya timeout 60 detik, jadi model yang hang tidak akan menghentikan rantai.
+
+**Tips:** simpan `openrouter/free` sebagai model terakhir — ini router dinamis OpenRouter yang otomatis memilih model gratis apa pun yang tersedia, jadi AI analysis hampir tidak pernah jatuh ke keyword-based fallback. Rantai model gratis bisa berubah sewaktu-waktu (model sering di-retire); perbarui daftar ini sesuai model `:free` aktif di https://openrouter.ai/models.
 
 ## API Endpoints
 
