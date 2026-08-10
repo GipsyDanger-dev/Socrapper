@@ -52,7 +52,8 @@ class TestStartSurf:
         assert response.status_code == 400
 
     def test_invalid_limit(self, client):
-        response = client.post("/api/surf/start", {"query": "test", "search_limit": 101}, format="json")
+        # Cap was raised 100 -> 200; 201 is now the first invalid value
+        response = client.post("/api/surf/start", {"query": "test", "search_limit": 201}, format="json")
         assert response.status_code == 400
 
     def test_start_returns_job_and_completes(self, client, monkeypatch):

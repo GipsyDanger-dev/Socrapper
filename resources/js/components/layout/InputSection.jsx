@@ -173,7 +173,7 @@ export default function InputSection({ onScrape, onSurf }) {
                                         value={searchLimit}
                                         onChange={(e) => setSearchLimit(parseInt(e.target.value))}
                                         min="1"
-                                        max="50"
+                                        max="200"
                                     />
                                 </span>
                             )}

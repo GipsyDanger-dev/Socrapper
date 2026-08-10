@@ -30,3 +30,28 @@ class PopularSearch(models.Model):
 
     def __str__(self):
         return f"{self.keyword} ({self.count})"
+
+
+class KeywordTrend(models.Model):
+    """Per-search sentiment snapshot used to build time-series trends.
+
+    A row is recorded every time a keyword is scraped or surfed with sentiment
+    analysis, so the trend endpoint can group snapshots by day.
+    """
+
+    keyword = models.CharField(max_length=255, db_index=True)
+    positive = models.IntegerField(default=0)
+    negative = models.IntegerField(default=0)
+    neutral = models.IntegerField(default=0)
+    total = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "keyword_trends"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["keyword", "created_at"], name="trend_keyword_date_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.keyword} ({self.created_at:%Y-%m-%d})"

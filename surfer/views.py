@@ -38,8 +38,8 @@ def surf(request):
 
     try:
         search_limit = int(search_limit)
-        if search_limit < 1 or search_limit > 100:
-            return Response({"success": False, "error": "search_limit must be 1-100"}, status=400)
+        if search_limit < 1 or search_limit > 200:
+            return Response({"success": False, "error": "search_limit must be 1-200"}, status=400)
     except (TypeError, ValueError):
         return Response({"success": False, "error": "search_limit must be a valid integer"}, status=400)
 
@@ -72,7 +72,7 @@ def quick_surf(request):
     limit = request.data.get("limit", 15)
     try:
         limit = int(limit)
-        if limit < 1 or limit > 50:
+        if limit < 1 or limit > 200:
             limit = 15
     except (TypeError, ValueError):
         limit = 15
@@ -131,14 +131,14 @@ def start_surf(request):
 
     try:
         search_limit = int(search_limit)
-        if search_limit < 1 or search_limit > 100:
-            return Response({"success": False, "error": "search_limit must be 1-100"}, status=400)
+        if search_limit < 1 or search_limit > 200:
+            return Response({"success": False, "error": "search_limit must be 1-200"}, status=400)
     except (TypeError, ValueError):
         return Response({"success": False, "error": "search_limit must be a valid integer"}, status=400)
 
     try:
         limit = int(request.data.get("limit", 15))
-        if limit < 1 or limit > 50:
+        if limit < 1 or limit > 200:
             limit = 15
     except (TypeError, ValueError):
         limit = 15

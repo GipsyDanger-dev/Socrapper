@@ -78,6 +78,14 @@ def scrape(request):
         except Exception as e:
             logger.warning(f"Sentiment analysis failed: {e}")
 
+        # Record a sentiment trend snapshot for time-series charts
+        try:
+            from .services.trend_service import record_snapshot
+
+            record_snapshot(keyword, analysis)
+        except Exception as e:
+            logger.warning(f"Failed to record trend snapshot: {e}")
+
         # Save history — separate from sentiment analysis
         try:
             pos = analysis.get("summary", {}).get("positive", 0) if analysis else 0
@@ -316,6 +324,29 @@ def get_popular_searches(request):
         return Response({"success": True, "searches": data})
     except Exception as e:
         logger.error(f"Get popular searches error: {e}")
+        return Response({"success": False, "error": "An internal error occurred"}, status=500)
+
+
+@api_view(["GET"])
+def get_trend(request):
+    """Return daily sentiment trend points for a keyword."""
+    keyword = request.query_params.get("keyword")
+    if not keyword or not keyword.strip():
+        return Response({"success": False, "error": "keyword is required"}, status=400)
+
+    try:
+        days = int(request.query_params.get("days", 30))
+        if days < 1 or days > 365:
+            days = 30
+    except (TypeError, ValueError):
+        days = 30
+
+    try:
+        from .services.trend_service import get_trend
+
+        return Response({"success": True, **get_trend(keyword, days)})
+    except Exception as e:
+        logger.error(f"Get trend error: {e}")
         return Response({"success": False, "error": "An internal error occurred"}, status=500)
 
 

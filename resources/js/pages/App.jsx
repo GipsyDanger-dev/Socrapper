@@ -6,6 +6,7 @@ import HistoryTab from '../components/tabs/HistoryTab';
 import SurfResultsTab from '../components/tabs/SurfResultsTab';
 import WordCloudTab from '../components/tabs/WordCloudTab';
 import ComparePanel from '../components/layout/ComparePanel';
+import TrendPanel from '../components/layout/TrendPanel';
 import AiAnalysisCard from '../components/layout/AiAnalysisCard';
 import LoadingIndicator from '../components/common/LoadingIndicator';
 import HomeContent from '../components/layout/HomeContent';
@@ -437,6 +438,9 @@ export default function App() {
 
             {/* Keyword comparison tool */}
             <ComparePanel />
+
+            {/* Sentiment trend over time */}
+            <TrendPanel currentKeyword={currentKeyword} />
 
             {/* Home content (before scraping) */}
             {!hasData && (

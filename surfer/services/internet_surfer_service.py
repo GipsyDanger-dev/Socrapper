@@ -257,6 +257,14 @@ class InternetSurferService:
                                 merged_results[idx]["sentiment"] = sent_item.get("sentiment", "neutral")
                                 merged_results[idx]["sentiment_confidence"] = sent_item.get("confidence", 0)
 
+            # Persist a sentiment trend snapshot for time-series charts
+            try:
+                from scraper.services.trend_service import record_snapshot
+
+                record_snapshot(query, sentiment_analysis)
+            except Exception:
+                logger.warning("Failed to record trend snapshot", exc_info=True)
+
             emit("assembling", "menyusun ringkasan & laporan...")
             summary = self._generate_summary(query, merged_results, sentiment_analysis)
             emit("done", "selesai!")

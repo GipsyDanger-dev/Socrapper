@@ -142,7 +142,7 @@ export default function LoadingIndicator({ show, keyword, stage, liveMessage }) 
                                 {isActive && <div className="lf-shimmer" aria-hidden="true" />}
                             </div>
                             <span className={`ls${isDone ? ' done' : ''}`}>
-                                {isDone ? 'selesai' : isActive ? '...' : '—'}
+                                {isDone ? '✓ selesai' : isActive ? `${Math.round(progress)}%` : '—'}
                             </span>
                         </div>
                     );

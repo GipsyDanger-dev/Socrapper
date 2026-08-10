@@ -119,7 +119,7 @@ Socrapper/
 │           ├── StatisticsTab.jsx
 │           └── SurfResultsTab.jsx
 │
-└── tests/                         # Pytest test suite (149 tests)
+└── tests/                         # Pytest test suite (191 tests)
     ├── conftest.py
     ├── settings_test.py
     ├── test_api_endpoints.py
@@ -256,6 +256,7 @@ Supported API:
 | `POST` | `/api/analyze` | Analisis sentimen teks |
 | `GET` | `/api/scrape-history` | History scraping (paginated) |
 | `DELETE` | `/api/scrape-history/<id>` | Hapus history |
+| `GET` | `/api/trend` | Tren sentimen time-series per keyword (`?keyword=X&days=30`) |
 
 ### Export
 
@@ -275,6 +276,10 @@ Supported API:
 | `POST` | `/api/surf/deep` | Deep surf (multiple queries) |
 | `POST` | `/api/surf/extract` | Extract content dari URL |
 | `POST` | `/api/surf/ai-analyze` | AI-powered analysis |
+| `POST` | `/api/surf/start` | Mulai surf sebagai background job (balikan `job_id`) |
+| `GET` | `/api/surf/events/<job_id>` | SSE stream progress live |
+| `GET` | `/api/surf/status/<job_id>` | Status job (fallback polling) |
+| `POST` | `/api/surf/compare` | Bandingkan sentimen 2–4 keyword |
 
 ### Example: Scrape
 

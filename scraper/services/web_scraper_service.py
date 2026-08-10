@@ -4,7 +4,7 @@ import hashlib
 import logging
 import os
 from datetime import datetime, timedelta
-from urllib.parse import quote_plus, urlencode
+from urllib.parse import quote_plus, urlencode, urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,21 @@ class WebScraperService:
     }
 
     def scrape(self, query, platform=None, limit=10):
-        # YouTube: use API if key is available
+        # YouTube: use API if key is available (paginated, so limit > 50 works)
         if platform == "youtube":
             api_key = os.getenv("YOUTUBE_API_KEY", "")
             if api_key:
                 results = self._scrape_youtube_api(query, limit, api_key)
                 if results:
                     return results
+
+        # Twitter/X: search engines (Google/Bing/DDG) return real x.com post
+        # URLs. Nitter is mostly dead, and fabricating status IDs yields
+        # dead links, so this path comes first for clickable results.
+        if platform == "twitter":
+            results = self._scrape_twitter_via_search(query, limit)
+            if results:
+                return results
 
         # Try Google News RSS first (works for all platforms, gives real data)
         results = self._scrape_via_news_rss(query, platform, limit)
@@ -51,51 +59,139 @@ class WebScraperService:
         return self._get_fallback(query, platform, limit)
 
     def _scrape_youtube_api(self, query, limit, api_key):
-        """Use YouTube Data API v3 for accurate results."""
+        """Use YouTube Data API v3 for accurate results.
+
+        The API caps maxResults at 50 per request, so larger limits are
+        filled by following the nextPageToken returned by each page.
+        """
         try:
             from .shared_client import fetch
 
-            search_url = (
-                f"https://www.googleapis.com/youtube/v3/search?"
-                f"part=snippet&q={quote_plus(query)}&maxResults={min(limit, 50)}"
-                f"&type=video&key={api_key}"
-            )
-            response = fetch(search_url)
-            data = response.json()
-
-            if "items" not in data:
-                logger.warning("YouTube API returned no items")
-                return None
-
             results = []
-            for i, item in enumerate(data["items"]):
-                snippet = item.get("snippet", {})
-                video_id = item.get("id", {}).get("videoId", "")
+            page_token = ""
 
-                # Get video statistics (views, likes, comments)
-                stats = self._get_youtube_video_stats(video_id, api_key)
-
-                results.append(
-                    {
-                        "id": f"yt-{video_id}",
-                        "platform": "youtube",
-                        "author": snippet.get("channelTitle", "Unknown"),
-                        "text": f"{snippet.get('title', '')}. {snippet.get('description', '')[:200]}",
-                        "timestamp": snippet.get("publishedAt", datetime.now().isoformat()),
-                        "likes": stats.get("likeCount", 0),
-                        "comments": stats.get("commentCount", 0),
-                        "shares": 0,
-                        "url": f"https://www.youtube.com/watch?v={video_id}",
-                        "views": stats.get("viewCount", 0),
-                        "thumbnail": snippet.get("thumbnails", {}).get("default", {}).get("url", ""),
-                    }
+            while len(results) < limit:
+                page_size = min(50, limit - len(results))
+                search_url = (
+                    f"https://www.googleapis.com/youtube/v3/search?"
+                    f"part=snippet&q={quote_plus(query)}&maxResults={page_size}"
+                    f"&type=video&key={api_key}"
                 )
+                if page_token:
+                    search_url += f"&pageToken={page_token}"
+
+                response = fetch(search_url)
+                data = response.json()
+
+                items = data.get("items", [])
+                for item in items:
+                    snippet = item.get("snippet", {})
+                    video_id = item.get("id", {}).get("videoId", "")
+                    if not video_id:
+                        continue
+
+                    # Get video statistics (views, likes, comments)
+                    stats = self._get_youtube_video_stats(video_id, api_key)
+
+                    results.append(
+                        {
+                            "id": f"yt-{video_id}",
+                            "platform": "youtube",
+                            "author": snippet.get("channelTitle", "Unknown"),
+                            "text": f"{snippet.get('title', '')}. {snippet.get('description', '')[:200]}",
+                            "timestamp": snippet.get("publishedAt", datetime.now().isoformat()),
+                            "likes": stats.get("likeCount", 0),
+                            "comments": stats.get("commentCount", 0),
+                            "shares": 0,
+                            "url": f"https://www.youtube.com/watch?v={video_id}",
+                            "views": stats.get("viewCount", 0),
+                            "thumbnail": snippet.get("thumbnails", {}).get("default", {}).get("url", ""),
+                        }
+                    )
+                    if len(results) >= limit:
+                        break
+
+                page_token = data.get("nextPageToken", "")
+                if not page_token or not items:
+                    break
 
             logger.info(f"YouTube API returned {len(results)} results for '{query}'")
-            return results
+            return results if results else None
         except Exception as e:
             logger.warning(f"YouTube API failed: {e}")
             return None
+
+    def _scrape_twitter_via_search(self, query, limit):
+        """Find real X/Twitter post URLs through search engines.
+
+        Search for ``site:x.com OR site:twitter.com <query>`` and keep only
+        results whose URL belongs to x.com/twitter.com, so every returned
+        item links to an actual tweet instead of a fabricated status ID.
+        """
+        try:
+            from surfer.services.search_engine_service import SearchEngineService
+
+            searcher = SearchEngineService()
+            found = searcher.search(f"{query} site:x.com OR site:twitter.com", limit)
+
+            results = []
+            seen = set()
+            for item in found:
+                url = item.get("url", "")
+                host = (urlparse(url).hostname or "").lower()
+                # Exact host match or subdomain — never loose substring (myx.com etc.)
+                if not (
+                    host == "x.com" or host.endswith(".x.com") or host == "twitter.com" or host.endswith(".twitter.com")
+                ):
+                    continue
+                if url in seen:
+                    continue
+                seen.add(url)
+
+                path_parts = urlparse(url).path.split("/")
+                username = path_parts[1] if len(path_parts) > 1 else ""
+
+                results.append(
+                    {
+                        "id": hashlib.md5(f"twitter-{url}".encode()).hexdigest()[:12],
+                        "platform": "twitter",
+                        "author": f"@{username}" if username else "Twitter/X",
+                        "text": item.get("title") or item.get("snippet") or f"Tweet about {query}",
+                        "timestamp": self._parse_date(item.get("publish_date")),
+                        "likes": 0,
+                        "comments": 0,
+                        "shares": 0,
+                        "url": url,
+                    }
+                )
+                if len(results) >= limit:
+                    break
+
+            return results
+        except Exception as e:
+            logger.warning(f"Twitter search-engine scrape failed: {e}")
+            return []
+
+    def _resolve_url(self, href, base=""):
+        """Convert a scraped href into a usable absolute URL (or '').
+
+        Handles Google result redirects (``/url?q=...``), protocol-relative
+        URLs (``//host/...``) and site-relative paths (``/path``).
+        """
+        if not href:
+            return ""
+        href = href.strip()
+        if href.startswith("/url?q="):
+            qs = parse_qs(href.split("?", 1)[1])
+            decoded = qs.get("q", [""])[0]
+            return decoded if decoded.startswith("http") else ""
+        if href.startswith("http"):
+            return href
+        if href.startswith("//"):
+            return "https:" + href
+        if href.startswith("/") and base:
+            return base + href
+        return ""
 
     def _get_youtube_video_stats(self, video_id, api_key):
         """Get video statistics (views, likes, comments)."""
@@ -309,6 +405,7 @@ class WebScraperService:
         return results
 
     def _extract_twitter(self, page, query, limit):
+        """Extract tweets from a nitter page using the real permalink href."""
         results = []
         tweets = page.css(".timeline-item") or page.css('[data-testid="tweet"]') or []
         for i, tweet in enumerate(tweets[:limit]):
@@ -316,6 +413,11 @@ class WebScraperService:
             text = text_el[0].text.strip() if text_el else f"Tweet about {query}"
             user_el = tweet.css(".username") or tweet.css('[data-testid="User-Name"]')
             author = user_el[0].text.strip() if user_el else f"@user{i}"
+            # nitter renders the permalink as .tweet-link href="/user/status/123"
+            link_el = tweet.css(".tweet-link") or tweet.css('a[href*="/status/"]')
+            href = link_el[0].attrib.get("href", "") if link_el else ""
+            # nitter relative permalink -> real X permalink
+            url = self._resolve_url(href, base="https://x.com")
             results.append(
                 {
                     "id": hashlib.md5(f"twitter-{i}-{query}".encode()).hexdigest()[:12],
@@ -326,7 +428,7 @@ class WebScraperService:
                     "likes": 0,
                     "comments": 0,
                     "shares": 0,
-                    "url": f"https://twitter.com/i/status/{random.randint(100000, 999999)}",
+                    "url": url,
                 }
             )
         return results
@@ -346,6 +448,7 @@ class WebScraperService:
                     score = int(re.sub(r"[^\d-]", "", score_el[0].text))
                 except ValueError:
                     score = 0
+            href = title_el[0].attrib.get("href", "") if title_el else ""
             results.append(
                 {
                     "id": hashlib.md5(f"reddit-{i}-{query}".encode()).hexdigest()[:12],
@@ -356,7 +459,7 @@ class WebScraperService:
                     "likes": score,
                     "comments": 0,
                     "shares": 0,
-                    "url": f"https://reddit.com/comments/{random.randint(100000, 999999)}",
+                    "url": self._resolve_url(href, base="https://old.reddit.com"),
                 }
             )
         return results
@@ -380,9 +483,7 @@ class WebScraperService:
                     "likes": 0,
                     "comments": 0,
                     "shares": 0,
-                    "url": href
-                    if href.startswith("http")
-                    else f"https://news.google.com/articles/{random.randint(100000, 999999)}",
+                    "url": self._resolve_url(href, base="https://news.google.com"),
                 }
             )
         return results
@@ -400,6 +501,7 @@ class WebScraperService:
                     votes = int(votes_el[0].text.strip())
                 except ValueError:
                     votes = 0
+            href = title_el[0].attrib.get("href", "") if title_el else ""
             results.append(
                 {
                     "id": hashlib.md5(f"stackoverflow-{i}-{query}".encode()).hexdigest()[:12],
@@ -410,7 +512,7 @@ class WebScraperService:
                     "likes": votes,
                     "comments": 0,
                     "shares": 0,
-                    "url": f"https://stackoverflow.com/questions/{random.randint(100000, 999999)}",
+                    "url": self._resolve_url(href, base="https://stackoverflow.com"),
                 }
             )
         return results
@@ -423,6 +525,7 @@ class WebScraperService:
             title = title_el[0].text.strip() if title_el else f"repo about {query}"
             desc_el = repo.css(".mb-1") or repo.css("p")
             desc = desc_el[0].text.strip() if desc_el else f"GitHub repository for {query}"
+            href = title_el[0].attrib.get("href", "") if title_el else ""
             results.append(
                 {
                     "id": hashlib.md5(f"github-{i}-{query}".encode()).hexdigest()[:12],
@@ -433,7 +536,7 @@ class WebScraperService:
                     "likes": 0,
                     "comments": 0,
                     "shares": 0,
-                    "url": f"https://github.com/{title}" if "/" in title else f"https://github.com/search?q={query}",
+                    "url": self._resolve_url(href, base="https://github.com"),
                 }
             )
         return results
@@ -446,6 +549,7 @@ class WebScraperService:
             title = title_el[0].text.strip() if title_el else f"Video about {query}"
             channel_el = video.css(".ytd-channel-name a") or video.css("#channel-name a")
             channel = channel_el[0].text.strip() if channel_el else f"Channel{i}"
+            href = title_el[0].attrib.get("href", "") if title_el else ""
             results.append(
                 {
                     "id": hashlib.md5(f"youtube-{i}-{query}".encode()).hexdigest()[:12],
@@ -456,7 +560,7 @@ class WebScraperService:
                     "likes": 0,
                     "comments": 0,
                     "shares": 0,
-                    "url": f"https://youtube.com/watch?v={hashlib.md5(f'{i}{query}'.encode()).hexdigest()[:11]}",
+                    "url": self._resolve_url(href, base="https://www.youtube.com"),
                 }
             )
         return results
