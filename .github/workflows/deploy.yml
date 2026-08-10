@@ -10,9 +10,9 @@ jobs:
     steps:
       - name: Deploy to VPS via SSH
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
-          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
-          SSH_USER: ubuntu
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY || secrets.SERVER_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DEPLOY_HOST || secrets.SERVER_HOST }}
+          SSH_USER: ${{ secrets.SERVER_USER || 'ubuntu' }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
