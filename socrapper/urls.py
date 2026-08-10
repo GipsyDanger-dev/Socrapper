@@ -1,15 +1,19 @@
 from django.urls import path, include
 from django.http import JsonResponse, HttpResponse
 
+
 def api_root(request):
-    return JsonResponse({'status': 'ok', 'message': 'Socrapper API v2.0'})
+    return JsonResponse({"status": "ok", "message": "Socrapper API v2.0"})
+
 
 def robots_txt(request):
     content = "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin/\n\nSitemap: https://www.socrapper.my.id/sitemap.xml\n"
-    return HttpResponse(content, content_type='text/plain')
+    return HttpResponse(content, content_type="text/plain")
+
 
 def google_verification(request):
-    return HttpResponse("google-site-verification: google1289e1e5d73483a9.html\n", content_type='text/plain')
+    return HttpResponse("google-site-verification: google1289e1e5d73483a9.html\n", content_type="text/plain")
+
 
 def sitemap_xml(request):
     content = """<?xml version="1.0" encoding="UTF-8"?>
@@ -21,13 +25,14 @@ def sitemap_xml(request):
         <priority>1.0</priority>
     </url>
 </urlset>"""
-    return HttpResponse(content, content_type='application/xml')
+    return HttpResponse(content, content_type="application/xml")
+
 
 urlpatterns = [
-    path('', api_root),
-    path('robots.txt', robots_txt),
-    path('sitemap.xml', sitemap_xml),
-    path('google1289e1e5d73483a9.html', google_verification),
-    path('api/', include('scraper.urls')),
-    path('api/', include('surfer.urls')),
+    path("", api_root),
+    path("robots.txt", robots_txt),
+    path("sitemap.xml", sitemap_xml),
+    path("google1289e1e5d73483a9.html", google_verification),
+    path("api/", include("scraper.urls")),
+    path("api/", include("surfer.urls")),
 ]

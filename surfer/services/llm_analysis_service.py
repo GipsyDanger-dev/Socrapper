@@ -12,9 +12,9 @@ class LLMAnalysisService:
     _client_lock = threading.Lock()
 
     def __init__(self):
-        self.api_key = getattr(settings, 'LLM_API_KEY', '')
-        self.base_url = getattr(settings, 'LLM_BASE_URL', 'https://api.openai.com/v1')
-        self.model = getattr(settings, 'LLM_MODEL', 'gpt-4o-mini')
+        self.api_key = getattr(settings, "LLM_API_KEY", "")
+        self.base_url = getattr(settings, "LLM_BASE_URL", "https://api.openai.com/v1")
+        self.model = getattr(settings, "LLM_MODEL", "gpt-4o-mini")
 
     def _get_client(self):
         if LLMAnalysisService._client is not None:
@@ -23,15 +23,16 @@ class LLMAnalysisService:
             if LLMAnalysisService._client is not None:
                 return LLMAnalysisService._client
             from openai import OpenAI
+
             LLMAnalysisService._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         return LLMAnalysisService._client
 
     def is_configured(self):
         return bool(self.api_key) and bool(self.base_url)
 
-    def analyze(self, prompt, system_prompt=''):
+    def analyze(self, prompt, system_prompt=""):
         if not self.is_configured():
-            logger.warning('LLM not configured. Set LLM_API_KEY and LLM_BASE_URL in .env')
+            logger.warning("LLM not configured. Set LLM_API_KEY and LLM_BASE_URL in .env")
             return None
 
         try:
@@ -39,8 +40,8 @@ class LLMAnalysisService:
 
             messages = []
             if system_prompt:
-                messages.append({'role': 'system', 'content': system_prompt})
-            messages.append({'role': 'user', 'content': prompt})
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
 
             response = client.chat.completions.create(
                 model=self.model,
@@ -51,11 +52,11 @@ class LLMAnalysisService:
 
             return response.choices[0].message.content
         except Exception as e:
-            logger.error(f'LLM analysis error: {e}')
+            logger.error(f"LLM analysis error: {e}")
             return None
 
     def analyze_sentiment(self, texts):
-        system_prompt = '''Kamu adalah analis sentimen profesional. Analisis sentimen dari teks-teks yang diberikan.
+        system_prompt = """Kamu adalah analis sentimen profesional. Analisis sentimen dari teks-teks yang diberikan.
 
 Untuk setiap teks, berikan:
 1. Sentimen: positive/negative/neutral
@@ -79,9 +80,9 @@ Response dalam format JSON:
     "overall": "positive",
     "overall_confidence": 78
   }
-}'''
+}"""
 
-        text_list = ''
+        text_list = ""
         for i, text in enumerate(texts):
             text_list += f"{i + 1}. {text[:500]}\n\n"
 
@@ -98,7 +99,7 @@ Response dalam format JSON:
         return self._fallback_sentiment(texts)
 
     def analyze_market(self, query, articles):
-        system_prompt = '''Kamu adalah analis pasar finansial profesional. Analisis data pasar yang diberikan dan berikan insight yang actionable.
+        system_prompt = """Kamu adalah analis pasar finansial profesional. Analisis data pasar yang diberikan dan berikan insight yang actionable.
 
 Response dalam format JSON:
 {
@@ -123,7 +124,7 @@ Response dalam format JSON:
   ],
   "recommendation": "Rekomendasi singkat",
   "timeframe": "short-term/medium-term/long-term"
-}'''
+}"""
 
         article_texts = self._format_articles(articles, 800)
         prompt = f'Query: "{query}"\n\nBerikut artikel-artikel terkait:\n\n{article_texts}\n\nBerikan analisis pasar yang komprehensif berdasarkan data di atas.'
@@ -140,7 +141,7 @@ Response dalam format JSON:
         return self._fallback_market(query)
 
     def analyze_general(self, query, articles):
-        system_prompt = '''Kamu adalah asisten AI yang ahli menganalisis informasi dari berbagai sumber. Berikan analisis yang komprehensif, objektif, dan terstruktur.
+        system_prompt = """Kamu adalah asisten AI yang ahli menganalisis informasi dari berbagai sumber. Berikan analisis yang komprehensif, objektif, dan terstruktur.
 
 Response dalam format JSON:
 {
@@ -165,7 +166,7 @@ Response dalam format JSON:
     "score": 0-100,
     "factors": ["faktor yang mempengaruhi kredibilitas"]
   }
-}'''
+}"""
 
         article_texts = self._format_articles(articles, 600)
         prompt = f'Query: "{query}"\n\nInformasi dari berbagai sumber:\n\n{article_texts}\n\nBerikan analisis komprehensif berdasarkan data di atas.'
@@ -180,22 +181,22 @@ Response dalam format JSON:
             return parsed
 
         return {
-            'query': query,
-            'analysis': response,
-            'key_findings': [],
-            'sentiment': {'overall': 'neutral', 'confidence': 50},
-            'entities': {'people': [], 'organizations': [], 'locations': [], 'topics': []},
-            'related_topics': [],
-            'credibility': {'score': 50, 'factors': []},
+            "query": query,
+            "analysis": response,
+            "key_findings": [],
+            "sentiment": {"overall": "neutral", "confidence": 50},
+            "entities": {"people": [], "organizations": [], "locations": [], "topics": []},
+            "related_topics": [],
+            "credibility": {"score": 50, "factors": []},
         }
 
     def _format_articles(self, articles, max_content=600):
-        text = ''
+        text = ""
         for i, article in enumerate(articles):
-            title = article.get('title', '')
-            snippet = article.get('snippet', '') or article.get('content_excerpt', '')
-            source = article.get('source', '')
-            date = article.get('publish_date', '')
+            title = article.get("title", "")
+            snippet = article.get("snippet", "") or article.get("content_excerpt", "")
+            source = article.get("source", "")
+            date = article.get("publish_date", "")
 
             text += f"--- Artikel {i + 1} ---\n"
             text += f"Judul: {title}\n"
@@ -211,14 +212,14 @@ Response dalam format JSON:
         except json.JSONDecodeError:
             pass
 
-        match = re.search(r'```(?:json)?\s*([\s\S]*?)```', response)
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)```", response)
         if match:
             try:
                 return json.loads(match.group(1).strip())
             except json.JSONDecodeError:
                 pass
 
-        match = re.search(r'\{[\s\S]*\}', response)
+        match = re.search(r"\{[\s\S]*\}", response)
         if match:
             try:
                 return json.loads(match.group(0))
@@ -229,51 +230,54 @@ Response dalam format JSON:
 
     def _fallback_sentiment(self, texts):
         from scraper.services.sentiment_service import SentimentService
+
         service = SentimentService()
         result = service.analyze_sentiments(texts)
 
-        overall = 'positive' if result['percentage']['positive'] > result['percentage']['negative'] else (
-            'negative' if result['percentage']['negative'] > result['percentage']['positive'] else 'neutral'
+        overall = (
+            "positive"
+            if result["percentage"]["positive"] > result["percentage"]["negative"]
+            else ("negative" if result["percentage"]["negative"] > result["percentage"]["positive"] else "neutral")
         )
 
         return {
-            'results': [
+            "results": [
                 {
-                    'text': d['text'],
-                    'sentiment': d['sentiment'],
-                    'confidence': d['confidence'],
-                    'reason': 'Keyword-based analysis',
+                    "text": d["text"],
+                    "sentiment": d["sentiment"],
+                    "confidence": d["confidence"],
+                    "reason": "Keyword-based analysis",
                 }
-                for d in result.get('results') or result.get('details', [])
+                for d in result.get("results") or result.get("details", [])
             ],
-            'summary': {
-                'positive': result['positive'],
-                'negative': result['negative'],
-                'neutral': result['neutral'],
-                'overall': overall,
-                'overall_confidence': 50,
+            "summary": {
+                "positive": result["positive"],
+                "negative": result["negative"],
+                "neutral": result["neutral"],
+                "overall": overall,
+                "overall_confidence": 50,
             },
         }
 
     def _fallback_market(self, query):
         return {
-            'query': query,
-            'sentiment': {'overall': 'neutral', 'confidence': 0, 'score': 0},
-            'summary': 'LLM tidak tersedia. Menampilkan data mentah tanpa analisis AI.',
-            'key_points': [],
-            'risk_factors': [],
-            'opportunities': [],
-            'recommendation': 'Konfigurasi LLM API untuk analisis otomatis.',
-            'timeframe': 'N/A',
+            "query": query,
+            "sentiment": {"overall": "neutral", "confidence": 0, "score": 0},
+            "summary": "LLM tidak tersedia. Menampilkan data mentah tanpa analisis AI.",
+            "key_points": [],
+            "risk_factors": [],
+            "opportunities": [],
+            "recommendation": "Konfigurasi LLM API untuk analisis otomatis.",
+            "timeframe": "N/A",
         }
 
     def _fallback_general(self, query):
         return {
-            'query': query,
-            'analysis': 'LLM tidak tersedia. Konfigurasi LLM_API_KEY dan LLM_BASE_URL di .env untuk analisis AI.',
-            'key_findings': [],
-            'sentiment': {'overall': 'neutral', 'confidence': 0},
-            'entities': {'people': [], 'organizations': [], 'locations': [], 'topics': []},
-            'related_topics': [],
-            'credibility': {'score': 0, 'factors': []},
+            "query": query,
+            "analysis": "LLM tidak tersedia. Konfigurasi LLM_API_KEY dan LLM_BASE_URL di .env untuk analisis AI.",
+            "key_findings": [],
+            "sentiment": {"overall": "neutral", "confidence": 0},
+            "entities": {"people": [], "organizations": [], "locations": [], "topics": []},
+            "related_topics": [],
+            "credibility": {"score": 0, "factors": []},
         }

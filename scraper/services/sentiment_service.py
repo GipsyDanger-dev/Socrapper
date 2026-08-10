@@ -8,20 +8,56 @@ logger = logging.getLogger(__name__)
 
 class SentimentService:
     POSITIVE_KEYWORDS = [
-        'bagus', 'mantap', 'hebat', 'keren', 'amazing', 'excellent',
-        'love', 'suka', 'fantastic', 'wonderful', 'great', 'awesome',
-        'luar biasa', 'sempurna', 'terbaik', 'sungguh',
+        "bagus",
+        "mantap",
+        "hebat",
+        "keren",
+        "amazing",
+        "excellent",
+        "love",
+        "suka",
+        "fantastic",
+        "wonderful",
+        "great",
+        "awesome",
+        "luar biasa",
+        "sempurna",
+        "terbaik",
+        "sungguh",
     ]
 
     NEGATIVE_KEYWORDS = [
-        'buruk', 'jelek', 'kecewa', 'marah', 'benci', 'hate', 'terrible',
-        'awful', 'horrible', 'bad', 'worst', 'sucks', 'stupid', 'sampah',
-        'mengecewakan', 'parah', 'tidak suka', 'sangat marah',
+        "buruk",
+        "jelek",
+        "kecewa",
+        "marah",
+        "benci",
+        "hate",
+        "terrible",
+        "awful",
+        "horrible",
+        "bad",
+        "worst",
+        "sucks",
+        "stupid",
+        "sampah",
+        "mengecewakan",
+        "parah",
+        "tidak suka",
+        "sangat marah",
     ]
 
     NEGATION_WORDS = [
-        'tidak', 'bukan', 'kurang', 'jangan', 'belum',
-        'ga', 'gak', 'nggak', 'enggak', 'tanpa',
+        "tidak",
+        "bukan",
+        "kurang",
+        "jangan",
+        "belum",
+        "ga",
+        "gak",
+        "nggak",
+        "enggak",
+        "tanpa",
     ]
 
     def __init__(self):
@@ -36,6 +72,7 @@ class SentimentService:
                 return self._llm_service if self._llm_service is not False else None
             try:
                 from surfer.services.llm_analysis_service import LLMAnalysisService
+
                 self._llm_service = LLMAnalysisService()
             except Exception:
                 self._llm_service = False
@@ -52,7 +89,7 @@ class SentimentService:
 
     def _analyze_with_llm(self, llm, texts):
         try:
-            system_prompt = '''Kamu adalah analis sentimen profesional yang ahli dalam bahasa Indonesia dan Inggris. Analisis sentimen dari setiap teks yang diberikan secara mendalam.
+            system_prompt = """Kamu adalah analis sentimen profesional yang ahli dalam bahasa Indonesia dan Inggris. Analisis sentimen dari setiap teks yang diberikan secara mendalam.
 
 Untuk setiap teks, tentukan:
 - sentiment: "positive", "negative", atau "neutral"
@@ -82,9 +119,9 @@ Response HARUS dalam format JSON yang valid:
   "dominant_emotion": "antusiasme"
 }
 
-Jangan tambahkan teks lain di luar JSON.'''
+Jangan tambahkan teks lain di luar JSON."""
 
-            text_list = ''
+            text_list = ""
             for i, text in enumerate(texts):
                 text_list += f"{i + 1}. {text[:500]}\n\n"
 
@@ -95,7 +132,7 @@ Jangan tambahkan teks lain di luar JSON.'''
                 return None
 
             parsed = self._parse_json(response)
-            if parsed and 'results' in parsed and 'summary' in parsed:
+            if parsed and "results" in parsed and "summary" in parsed:
                 return parsed
 
             return None
@@ -109,14 +146,14 @@ Jangan tambahkan teks lain di luar JSON.'''
         except json.JSONDecodeError:
             pass
 
-        match = re.search(r'```(?:json)?\s*([\s\S]*?)```', response)
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)```", response)
         if match:
             try:
                 return json.loads(match.group(1).strip())
             except json.JSONDecodeError:
                 pass
 
-        match = re.search(r'\{[\s\S]*\}', response)
+        match = re.search(r"\{[\s\S]*\}", response)
         if match:
             try:
                 return json.loads(match.group(0))
@@ -127,14 +164,14 @@ Jangan tambahkan teks lain di luar JSON.'''
 
     def _analyze_with_keywords(self, texts):
         analysis = {
-            'positive': 0,
-            'negative': 0,
-            'neutral': 0,
-            'results': [],
+            "positive": 0,
+            "negative": 0,
+            "neutral": 0,
+            "results": [],
         }
 
         if not texts:
-            analysis['percentage'] = {'positive': 0, 'negative': 0, 'neutral': 100}
+            analysis["percentage"] = {"positive": 0, "negative": 0, "neutral": 100}
             return analysis
 
         for text in texts:
@@ -142,17 +179,19 @@ Jangan tambahkan teks lain di luar JSON.'''
             confidence = self._calculate_confidence(text, sentiment)
 
             analysis[sentiment] += 1
-            analysis['results'].append({
-                'text': text,
-                'sentiment': sentiment,
-                'confidence': round(confidence, 2),
-            })
+            analysis["results"].append(
+                {
+                    "text": text,
+                    "sentiment": sentiment,
+                    "confidence": round(confidence, 2),
+                }
+            )
 
         total = len(texts)
-        analysis['percentage'] = {
-            'positive': round((analysis['positive'] / total) * 100, 2),
-            'negative': round((analysis['negative'] / total) * 100, 2),
-            'neutral': round((analysis['neutral'] / total) * 100, 2),
+        analysis["percentage"] = {
+            "positive": round((analysis["positive"] / total) * 100, 2),
+            "negative": round((analysis["negative"] / total) * 100, 2),
+            "neutral": round((analysis["neutral"] / total) * 100, 2),
         }
 
         return analysis
@@ -163,42 +202,42 @@ Jangan tambahkan teks lain di luar JSON.'''
         positive_count = 0
         negative_count = 0
 
-        multi_word_positive = [k for k in self.POSITIVE_KEYWORDS if ' ' in k]
-        single_word_positive = [k for k in self.POSITIVE_KEYWORDS if ' ' not in k]
-        multi_word_negative = [k for k in self.NEGATIVE_KEYWORDS if ' ' in k]
-        single_word_negative = [k for k in self.NEGATIVE_KEYWORDS if ' ' not in k]
+        multi_word_positive = [k for k in self.POSITIVE_KEYWORDS if " " in k]
+        single_word_positive = [k for k in self.POSITIVE_KEYWORDS if " " not in k]
+        multi_word_negative = [k for k in self.NEGATIVE_KEYWORDS if " " in k]
+        single_word_negative = [k for k in self.NEGATIVE_KEYWORDS if " " not in k]
 
         for keyword in multi_word_positive:
-            pattern = r'\b' + re.escape(keyword) + r'\b'
+            pattern = r"\b" + re.escape(keyword) + r"\b"
             positive_count += len(re.findall(pattern, text_lower))
 
         for keyword in multi_word_negative:
-            pattern = r'\b' + re.escape(keyword) + r'\b'
+            pattern = r"\b" + re.escape(keyword) + r"\b"
             negative_count += len(re.findall(pattern, text_lower))
 
         for keyword in single_word_positive:
-            pattern = r'\b' + re.escape(keyword) + r'\b'
+            pattern = r"\b" + re.escape(keyword) + r"\b"
             for match in re.finditer(pattern, text_lower):
-                text_before = text_lower[:match.start()]
+                text_before = text_lower[: match.start()]
                 if self._is_negated(text_before):
                     negative_count += 1
                 else:
                     positive_count += 1
 
         for keyword in single_word_negative:
-            pattern = r'\b' + re.escape(keyword) + r'\b'
+            pattern = r"\b" + re.escape(keyword) + r"\b"
             for match in re.finditer(pattern, text_lower):
-                text_before = text_lower[:match.start()]
+                text_before = text_lower[: match.start()]
                 if self._is_negated(text_before):
                     positive_count += 1
                 else:
                     negative_count += 1
 
         if positive_count > negative_count:
-            return 'positive'
+            return "positive"
         elif negative_count > positive_count:
-            return 'negative'
-        return 'neutral'
+            return "negative"
+        return "neutral"
 
     def _is_negated(self, text_before_match):
         words = text_before_match.split()
@@ -210,13 +249,13 @@ Jangan tambahkan teks lain di luar JSON.'''
         matches = 0
 
         keywords = []
-        if sentiment == 'positive':
+        if sentiment == "positive":
             keywords = self.POSITIVE_KEYWORDS
-        elif sentiment == 'negative':
+        elif sentiment == "negative":
             keywords = self.NEGATIVE_KEYWORDS
 
         for keyword in keywords:
-            pattern = r'\b' + re.escape(keyword) + r'\b'
+            pattern = r"\b" + re.escape(keyword) + r"\b"
             matches += len(re.findall(pattern, text_lower))
 
         return min(matches * 15, 100)

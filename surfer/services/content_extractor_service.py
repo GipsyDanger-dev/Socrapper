@@ -8,12 +8,28 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 logger = logging.getLogger(__name__)
 
 NOISE_SELECTORS = [
-    'script', 'style', 'nav', 'footer', 'header',
-    '.sidebar', '.advertisement', '.ad', '.ads',
-    '.cookie-banner', '.popup', '.modal',
-    '.social-share', '.related-posts', '.comments',
-    '#sidebar', '#footer', '#header', '#nav',
-    '.widget', '.newsletter', '.subscription',
+    "script",
+    "style",
+    "nav",
+    "footer",
+    "header",
+    ".sidebar",
+    ".advertisement",
+    ".ad",
+    ".ads",
+    ".cookie-banner",
+    ".popup",
+    ".modal",
+    ".social-share",
+    ".related-posts",
+    ".comments",
+    "#sidebar",
+    "#footer",
+    "#header",
+    "#nav",
+    ".widget",
+    ".newsletter",
+    ".subscription",
 ]
 
 
@@ -23,13 +39,13 @@ class ContentExtractorService:
         """Block internal/private IPs to prevent SSRF."""
         try:
             parsed = urlparse(url)
-            if parsed.scheme not in ('http', 'https'):
+            if parsed.scheme not in ("http", "https"):
                 return False
             hostname = parsed.hostname
             if not hostname:
                 return False
             # Block localhost
-            if hostname in ('localhost', '127.0.0.1', '::1', '0.0.0.0'):
+            if hostname in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
                 return False
             # Resolve and check IP
             try:
@@ -41,7 +57,7 @@ class ContentExtractorService:
             except (socket.gaierror, ValueError):
                 pass
             # Block cloud metadata
-            if '169.254.169.254' in hostname or 'metadata.google' in hostname:
+            if "169.254.169.254" in hostname or "metadata.google" in hostname:
                 return False
             return True
         except Exception:
@@ -49,10 +65,11 @@ class ContentExtractorService:
 
     def extract(self, url):
         if not self._is_safe_url(url):
-            return self._error_result(url, 'URL not allowed')
+            return self._error_result(url, "URL not allowed")
         try:
             from scraper.services.shared_client import fetch
             from scraper.services.rate_limiter import throttle
+
             throttle(url)
             response = fetch(url)
 
@@ -81,6 +98,7 @@ class ContentExtractorService:
     def _parse_content(self, html, url):
         try:
             from lxml import html as lxml_html
+
             doc = lxml_html.fromstring(html)
         except Exception:
             return self._error_result(url, "Failed to parse HTML")
@@ -98,16 +116,16 @@ class ContentExtractorService:
         word_count = len(main_content.split()) if main_content else 0
 
         return {
-            'url': url,
-            'title': title,
-            'description': description,
-            'author': author,
-            'publish_date': publish_date,
-            'site_name': site_name,
-            'content': main_content,
-            'word_count': word_count,
-            'images': images,
-            'success': True,
+            "url": url,
+            "title": title,
+            "description": description,
+            "author": author,
+            "publish_date": publish_date,
+            "site_name": site_name,
+            "content": main_content,
+            "word_count": word_count,
+            "images": images,
+            "success": True,
         }
 
     def _remove_noise(self, doc):
@@ -131,23 +149,25 @@ class ContentExtractorService:
 
             # h1
             try:
-                h1 = doc.find('.//h1')
+                h1 = doc.find(".//h1")
                 if h1 is not None and h1.text:
                     return h1.text.strip()
             except Exception:
                 pass
 
             # <title>
-            match = re.search(r'<title[^>]*>(.*?)</title>', html, re.DOTALL | re.IGNORECASE)
+            match = re.search(r"<title[^>]*>(.*?)</title>", html, re.DOTALL | re.IGNORECASE)
             if match:
-                return re.sub(r'<[^>]*>', '', match.group(1)).strip()
+                return re.sub(r"<[^>]*>", "", match.group(1)).strip()
         except Exception:
             pass
-        return 'Untitled'
+        return "Untitled"
 
     def _extract_meta_description(self, doc, html):
         try:
-            match = re.search(r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\']', html, re.IGNORECASE)
+            match = re.search(
+                r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\']', html, re.IGNORECASE
+            )
             if match:
                 return match.group(1).strip()
             match = re.search(r'<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\']', html, re.IGNORECASE)
@@ -155,7 +175,7 @@ class ContentExtractorService:
                 return match.group(1).strip()
         except Exception:
             pass
-        return ''
+        return ""
 
     def _extract_author(self, doc, html):
         try:
@@ -174,7 +194,7 @@ class ContentExtractorService:
             except Exception:
                 pass
 
-            for selector in ['.author', '.byline', '.writer']:
+            for selector in [".author", ".byline", ".writer"]:
                 try:
                     els = doc.cssselect(selector)
                     if els and els[0].text:
@@ -183,7 +203,7 @@ class ContentExtractorService:
                     continue
         except Exception:
             pass
-        return ''
+        return ""
 
     def _extract_date(self, doc, html):
         try:
@@ -197,34 +217,36 @@ class ContentExtractorService:
             try:
                 el = doc.find('.//*[@itemprop="datePublished"]')
                 if el is not None:
-                    return (el.get('content') or el.text or '').strip()
+                    return (el.get("content") or el.text or "").strip()
             except Exception:
                 pass
 
             try:
-                time_el = doc.find('.//time')
+                time_el = doc.find(".//time")
                 if time_el is not None:
-                    return (time_el.get('datetime') or time_el.text or '').strip()
+                    return (time_el.get("datetime") or time_el.text or "").strip()
             except Exception:
                 pass
         except Exception:
             pass
-        return ''
+        return ""
 
     def _extract_site_name(self, doc, html, url):
         try:
-            match = re.search(r'<meta[^>]+property=["\']og:site_name["\'][^>]+content=["\'](.*?)["\']', html, re.IGNORECASE)
+            match = re.search(
+                r'<meta[^>]+property=["\']og:site_name["\'][^>]+content=["\'](.*?)["\']', html, re.IGNORECASE
+            )
             if match:
                 return match.group(1).strip()
         except Exception:
             pass
-        return urlparse(url).hostname or ''
+        return urlparse(url).hostname or ""
 
     def _extract_main_content(self, doc, html):
         try:
             # Try <article> first
             try:
-                articles = doc.cssselect('article')
+                articles = doc.cssselect("article")
                 if articles:
                     text = self._get_text(articles[0])
                     if len(text) > 200:
@@ -233,9 +255,17 @@ class ContentExtractorService:
                 pass
 
             # Try content selectors
-            for selector in ['.post-content', '.article-content', '.entry-content',
-                            '.content', '.main-content', '#content', '#main',
-                            '[role="main"]', 'main']:
+            for selector in [
+                ".post-content",
+                ".article-content",
+                ".entry-content",
+                ".content",
+                ".main-content",
+                "#content",
+                "#main",
+                '[role="main"]',
+                "main",
+            ]:
                 try:
                     els = doc.cssselect(selector)
                     if els:
@@ -247,13 +277,13 @@ class ContentExtractorService:
 
             # Fallback: all <p> tags
             try:
-                paragraphs = doc.cssselect('p')
+                paragraphs = doc.cssselect("p")
                 text_parts = []
                 for p in paragraphs:
-                    p_text = (p.text_content() if hasattr(p, 'text_content') else (p.text or '')).strip()
+                    p_text = (p.text_content() if hasattr(p, "text_content") else (p.text or "")).strip()
                     if len(p_text) > 30:
                         text_parts.append(p_text)
-                text = '\n\n'.join(text_parts)
+                text = "\n\n".join(text_parts)
                 if len(text) > 100:
                     return self._clean_text(text)
             except Exception:
@@ -261,7 +291,7 @@ class ContentExtractorService:
 
             # Last fallback: body text
             try:
-                body = doc.find('.//body')
+                body = doc.find(".//body")
                 if body is not None:
                     return self._get_text(body)
             except Exception:
@@ -269,7 +299,7 @@ class ContentExtractorService:
         except Exception as e:
             logger.error(f"Content extraction error: {e}")
 
-        return ''
+        return ""
 
     def _extract_images(self, doc, html, url):
         images = []
@@ -278,15 +308,15 @@ class ContentExtractorService:
             if match:
                 images.append(match.group(1))
 
-            for selector in ['article', '.post-content', '.article-content', '.content', 'main']:
+            for selector in ["article", ".post-content", ".article-content", ".content", "main"]:
                 try:
                     els = doc.cssselect(selector)
                     if els:
-                        for img in els[0].cssselect('img'):
-                            src = img.get('src', '')
+                        for img in els[0].cssselect("img"):
+                            src = img.get("src", "")
                             if src:
-                                if not src.startswith('http'):
-                                    src = url.rstrip('/') + '/' + src.lstrip('/')
+                                if not src.startswith("http"):
+                                    src = url.rstrip("/") + "/" + src.lstrip("/")
                                 images.append(src)
                         if images:
                             break
@@ -305,36 +335,37 @@ class ContentExtractorService:
 
     def _get_text(self, element):
         try:
-            if hasattr(element, 'text_content'):
+            if hasattr(element, "text_content"):
                 text = element.text_content()
             else:
-                text = element.text or ''
+                text = element.text or ""
                 for child in element:
-                    text += ' ' + self._get_text(child)
+                    text += " " + self._get_text(child)
             return self._clean_text(text)
         except Exception:
-            return ''
+            return ""
 
     def _clean_text(self, text):
         import html as html_mod
+
         text = html_mod.unescape(text)
         text = html_mod.unescape(text)
-        text = re.sub(r'<[^>]*>', ' ', text)
-        text = re.sub(r'\s+', ' ', text)
-        text = re.sub(r'\n{3,}', '\n\n', text)
+        text = re.sub(r"<[^>]*>", " ", text)
+        text = re.sub(r"\s+", " ", text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
         return text.strip()
 
     def _error_result(self, url, error):
         return {
-            'url': url,
-            'title': '',
-            'description': '',
-            'author': '',
-            'publish_date': '',
-            'site_name': urlparse(url).hostname or '',
-            'content': '',
-            'word_count': 0,
-            'images': [],
-            'success': False,
-            'error': error,
+            "url": url,
+            "title": "",
+            "description": "",
+            "author": "",
+            "publish_date": "",
+            "site_name": urlparse(url).hostname or "",
+            "content": "",
+            "word_count": 0,
+            "images": [],
+            "success": False,
+            "error": error,
         }

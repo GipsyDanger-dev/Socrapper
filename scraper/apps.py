@@ -2,8 +2,8 @@ from django.apps import AppConfig
 
 
 class ScraperConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'scraper'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "scraper"
 
     def ready(self):
         """Start background services when Django starts."""
@@ -13,6 +13,7 @@ class ScraperConfig(AppConfig):
         # Start news cache in background (delayed to avoid import issues)
         def start_cache():
             import time
+
             time.sleep(2)  # Wait for Django to fully initialize
             news_cache.start()
 

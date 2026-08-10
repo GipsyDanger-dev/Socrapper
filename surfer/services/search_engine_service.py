@@ -45,7 +45,7 @@ class SearchEngineService:
         seen = set()
         unique = []
         for r in results:
-            url = r.get('url', '')
+            url = r.get("url", "")
             if url and url not in seen:
                 seen.add(url)
                 unique.append(r)
@@ -54,13 +54,14 @@ class SearchEngineService:
 
     def _resolve_google_news_url(self, url):
         """Decode Google News URL to get the actual article URL."""
-        if not url or 'news.google.com' not in url:
+        if not url or "news.google.com" not in url:
             return url
         try:
             from googlenewsdecoder import new_decoderv1
+
             result = new_decoderv1(url)
-            if result.get('status') and result.get('decoded_url'):
-                return result['decoded_url']
+            if result.get("status") and result.get("decoded_url"):
+                return result["decoded_url"]
         except Exception as e:
             logger.debug(f"Google News URL decode failed: {e}")
         return url
@@ -71,7 +72,7 @@ class SearchEngineService:
             from scraper.services.rate_limiter import throttle
 
             url = f"https://news.google.com/rss/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&ceid=ID:id"
-            throttle('news.google.com')
+            throttle("news.google.com")
             response = fetch(url)
 
             if response.status_code != 200:
@@ -80,36 +81,38 @@ class SearchEngineService:
 
             xml_text = response.text
             results = []
-            items = re.findall(r'<item>(.*?)</item>', xml_text, re.DOTALL)
+            items = re.findall(r"<item>(.*?)</item>", xml_text, re.DOTALL)
 
             for item in items:
                 if len(results) >= limit:
                     break
 
-                title = self._extract_xml_tag(item, 'title')
-                link = self._extract_xml_tag(item, 'link')
-                pub_date = self._extract_xml_tag(item, 'pubDate')
-                source = self._extract_xml_tag(item, 'source')
-                description = self._extract_xml_tag(item, 'description')
+                title = self._extract_xml_tag(item, "title")
+                link = self._extract_xml_tag(item, "link")
+                pub_date = self._extract_xml_tag(item, "pubDate")
+                source = self._extract_xml_tag(item, "source")
+                description = self._extract_xml_tag(item, "description")
 
                 article_url = self._extract_article_url(description) or link
 
                 # Resolve Google News redirect to get actual article URL
-                if 'news.google.com' in article_url:
+                if "news.google.com" in article_url:
                     article_url = self._resolve_google_news_url(article_url)
 
                 # Parse bundled articles from description into clean format
                 clean_snippet = self._parse_rss_description(description)
 
                 if title and link:
-                    results.append({
-                        'title': self._decode_html(title),
-                        'url': article_url,
-                        'snippet': clean_snippet,
-                        'source': source or urlparse(article_url).hostname or '',
-                        'publish_date': pub_date,
-                        'type': 'news',
-                    })
+                    results.append(
+                        {
+                            "title": self._decode_html(title),
+                            "url": article_url,
+                            "snippet": clean_snippet,
+                            "source": source or urlparse(article_url).hostname or "",
+                            "publish_date": pub_date,
+                            "type": "news",
+                        }
+                    )
 
             return results
         except Exception as e:
@@ -124,7 +127,7 @@ class SearchEngineService:
             start = (page - 1) * 10
             url = f"https://www.google.com/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&num={min(limit, 10)}&start={start}"
 
-            throttle('www.google.com')
+            throttle("www.google.com")
             response = fetch(url)
 
             if response.status_code == 429:
@@ -138,7 +141,7 @@ class SearchEngineService:
             html = response.text
 
             # Check for CAPTCHA
-            if 'captcha' in html.lower() or 'unusual traffic' in html.lower():
+            if "captcha" in html.lower() or "unusual traffic" in html.lower():
                 logger.warning("Google CAPTCHA detected")
                 return []
 
@@ -150,21 +153,23 @@ class SearchEngineService:
                 if len(results) >= limit:
                     break
                 clean_url = unquote(url_match)
-                title = re.sub(r'<[^>]*>', '', title_html).strip()
+                title = re.sub(r"<[^>]*>", "", title_html).strip()
 
-                if 'google.com' in clean_url:
+                if "google.com" in clean_url:
                     continue
-                if 'youtube.com/results' in clean_url:
+                if "youtube.com/results" in clean_url:
                     continue
 
-                if title and clean_url.startswith('http'):
-                    results.append({
-                        'title': self._decode_html(title),
-                        'url': clean_url,
-                        'snippet': '',
-                        'source': urlparse(clean_url).hostname or '',
-                        'type': 'web',
-                    })
+                if title and clean_url.startswith("http"):
+                    results.append(
+                        {
+                            "title": self._decode_html(title),
+                            "url": clean_url,
+                            "snippet": "",
+                            "source": urlparse(clean_url).hostname or "",
+                            "type": "web",
+                        }
+                    )
 
             # Pattern 2: <a href="https://..."><h3>...</h3></a>
             if not results:
@@ -172,17 +177,19 @@ class SearchEngineService:
                 for url_match, title_html in matches:
                     if len(results) >= limit:
                         break
-                    if 'google.com' in url_match:
+                    if "google.com" in url_match:
                         continue
-                    title = re.sub(r'<[^>]*>', '', title_html).strip()
+                    title = re.sub(r"<[^>]*>", "", title_html).strip()
                     if title:
-                        results.append({
-                            'title': self._decode_html(title),
-                            'url': url_match,
-                            'snippet': '',
-                            'source': urlparse(url_match).hostname or '',
-                            'type': 'web',
-                        })
+                        results.append(
+                            {
+                                "title": self._decode_html(title),
+                                "url": url_match,
+                                "snippet": "",
+                                "source": urlparse(url_match).hostname or "",
+                                "type": "web",
+                            }
+                        )
 
             return results
         except Exception as e:
@@ -196,7 +203,7 @@ class SearchEngineService:
             from scraper.services.rate_limiter import throttle
 
             url = f"https://www.bing.com/search?q={urlencode({'': query})[1:]}&count={min(limit, 10)}"
-            throttle('www.bing.com')
+            throttle("www.bing.com")
             response = fetch(url)
 
             if response.status_code != 200:
@@ -206,21 +213,25 @@ class SearchEngineService:
             results = []
 
             # Bing result pattern: <li class="b_algo"><h2><a href="URL">TITLE</a></h2>
-            matches = re.findall(r'<li class="b_algo">\s*<h2>\s*<a href="(https?://[^"]+)"[^>]*>(.*?)</a>', html, re.DOTALL)
+            matches = re.findall(
+                r'<li class="b_algo">\s*<h2>\s*<a href="(https?://[^"]+)"[^>]*>(.*?)</a>', html, re.DOTALL
+            )
             for url_match, title_html in matches:
                 if len(results) >= limit:
                     break
-                if 'bing.com' in url_match or 'microsoft.com' in url_match:
+                if "bing.com" in url_match or "microsoft.com" in url_match:
                     continue
-                title = re.sub(r'<[^>]*>', '', title_html).strip()
+                title = re.sub(r"<[^>]*>", "", title_html).strip()
                 if title:
-                    results.append({
-                        'title': self._decode_html(title),
-                        'url': url_match,
-                        'snippet': '',
-                        'source': urlparse(url_match).hostname or '',
-                        'type': 'web',
-                    })
+                    results.append(
+                        {
+                            "title": self._decode_html(title),
+                            "url": url_match,
+                            "snippet": "",
+                            "source": urlparse(url_match).hostname or "",
+                            "type": "web",
+                        }
+                    )
 
             return results
         except Exception as e:
@@ -234,7 +245,7 @@ class SearchEngineService:
             from scraper.services.rate_limiter import throttle
 
             url = f"https://html.duckduckgo.com/html/?q={urlencode({'': query})[1:]}"
-            throttle('duckduckgo.com')
+            throttle("duckduckgo.com")
             response = fetch(url)
 
             if response.status_code != 200:
@@ -248,23 +259,26 @@ class SearchEngineService:
             for url_match, title_html in matches:
                 if len(results) >= limit:
                     break
-                if 'duckduckgo.com' in url_match:
+                if "duckduckgo.com" in url_match:
                     continue
-                title = re.sub(r'<[^>]*>', '', title_html).strip()
+                title = re.sub(r"<[^>]*>", "", title_html).strip()
                 # DuckDuckGo uses //duckduckgo.com/l/?uddg=REAL_URL format
-                if 'uddg=' in url_match:
+                if "uddg=" in url_match:
                     from urllib.parse import parse_qs, urlparse as up
+
                     parsed = up(url_match)
                     qs = parse_qs(parsed.query)
-                    url_match = qs.get('uddg', [url_match])[0]
-                if title and url_match.startswith('http'):
-                    results.append({
-                        'title': self._decode_html(title),
-                        'url': url_match,
-                        'snippet': '',
-                        'source': urlparse(url_match).hostname or '',
-                        'type': 'web',
-                    })
+                    url_match = qs.get("uddg", [url_match])[0]
+                if title and url_match.startswith("http"):
+                    results.append(
+                        {
+                            "title": self._decode_html(title),
+                            "url": url_match,
+                            "snippet": "",
+                            "source": urlparse(url_match).hostname or "",
+                            "type": "web",
+                        }
+                    )
 
             return results
         except Exception as e:
@@ -272,8 +286,8 @@ class SearchEngineService:
             return []
 
     def _extract_xml_tag(self, xml_text, tag):
-        match = re.search(rf'<{tag}(?:[^>]*)>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</{tag}>', xml_text, re.DOTALL)
-        return match.group(1).strip() if match else ''
+        match = re.search(rf"<{tag}(?:[^>]*)>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</{tag}>", xml_text, re.DOTALL)
+        return match.group(1).strip() if match else ""
 
     def _extract_article_url(self, html):
         match = re.search(r'href="(https?://(?!news\.google\.com)[^"]+)"', html, re.IGNORECASE)
@@ -282,48 +296,51 @@ class SearchEngineService:
         match = re.search(r'<a[^>]+href="([^"]+)"[^>]*>', html, re.IGNORECASE)
         if match:
             url = match.group(1)
-            if 'news.google.com' not in url and url.startswith('http'):
+            if "news.google.com" not in url and url.startswith("http"):
                 return url
-        return ''
+        return ""
 
     def _decode_html(self, text):
         import html
+
         return html.unescape(text)
 
     def _strip_html(self, text):
         if not text:
-            return ''
+            return ""
         import html as html_mod
+
         clean = html_mod.unescape(text)
         clean = html_mod.unescape(clean)
-        clean = re.sub(r'<[^>]*>', ' ', clean)
-        clean = re.sub(r'\s+', ' ', clean).strip()
+        clean = re.sub(r"<[^>]*>", " ", clean)
+        clean = re.sub(r"\s+", " ", clean).strip()
         return clean
 
     def _parse_rss_description(self, html_desc):
         """Parse Google News RSS description into clean 'Title - Source' lines."""
         if not html_desc:
-            return ''
+            return ""
         import html as html_mod
+
         decoded = html_mod.unescape(html_mod.unescape(html_desc))
 
         # Extract all <li> items
-        items = re.findall(r'<li[^>]*>(.*?)</li>', decoded, re.DOTALL)
+        items = re.findall(r"<li[^>]*>(.*?)</li>", decoded, re.DOTALL)
         if not items:
             # Single article (no <li>), just strip and return
-            clean = re.sub(r'<[^>]*>', ' ', decoded)
-            clean = re.sub(r'\s+', ' ', clean).strip()
+            clean = re.sub(r"<[^>]*>", " ", decoded)
+            clean = re.sub(r"\s+", " ", clean).strip()
             return clean
 
         articles = []
         for item_html in items:
             # Extract title from <a> tag
-            title_m = re.search(r'<a[^>]*>(.*?)</a>', item_html, re.DOTALL)
-            title = re.sub(r'<[^>]*>', '', title_m.group(1)).strip() if title_m else ''
+            title_m = re.search(r"<a[^>]*>(.*?)</a>", item_html, re.DOTALL)
+            title = re.sub(r"<[^>]*>", "", title_m.group(1)).strip() if title_m else ""
             # Extract source from <font> tag
-            source_m = re.search(r'<font[^>]*>(.*?)</font>', item_html, re.DOTALL)
-            source = re.sub(r'<[^>]*>', '', source_m.group(1)).strip() if source_m else ''
+            source_m = re.search(r"<font[^>]*>(.*?)</font>", item_html, re.DOTALL)
+            source = re.sub(r"<[^>]*>", "", source_m.group(1)).strip() if source_m else ""
             if title:
                 articles.append(f"{title} - {source}" if source else title)
 
-        return '\n'.join(articles)
+        return "\n".join(articles)

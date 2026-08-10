@@ -11,14 +11,16 @@ RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 class RetryableHTTPError(Exception):
     """Exception for HTTP responses that should be retried."""
+
     def __init__(self, status_code, response=None):
         self.status_code = status_code
         self.response = response
         super().__init__(f"HTTP {status_code}")
 
 
-def retry(max_attempts=3, base_delay=1.0, max_delay=30.0, exceptions=(Exception,),
-          retry_on_status=False, status_codes=None):
+def retry(
+    max_attempts=3, base_delay=1.0, max_delay=30.0, exceptions=(Exception,), retry_on_status=False, status_codes=None
+):
     """
     Retry decorator with exponential backoff.
 
@@ -41,17 +43,17 @@ def retry(max_attempts=3, base_delay=1.0, max_delay=30.0, exceptions=(Exception,
                     result = func(*args, **kwargs)
 
                     # Check HTTP status if enabled
-                    if retry_on_status and hasattr(result, 'status_code'):
+                    if retry_on_status and hasattr(result, "status_code"):
                         if result.status_code in retryable:
                             # Check for Retry-After header
-                            retry_after = result.headers.get('Retry-After')
+                            retry_after = result.headers.get("Retry-After")
                             if retry_after:
                                 try:
                                     delay = float(retry_after)
                                 except ValueError:
-                                    delay = min(base_delay * (2 ** attempt), max_delay)
+                                    delay = min(base_delay * (2**attempt), max_delay)
                             else:
-                                delay = min(base_delay * (2 ** attempt), max_delay)
+                                delay = min(base_delay * (2**attempt), max_delay)
                                 delay *= random.uniform(0.8, 1.2)
 
                             if attempt < max_attempts - 1:
@@ -63,8 +65,7 @@ def retry(max_attempts=3, base_delay=1.0, max_delay=30.0, exceptions=(Exception,
                                 continue
                             else:
                                 logger.error(
-                                    f"All {max_attempts} attempts failed for {func.__name__}: "
-                                    f"HTTP {result.status_code}"
+                                    f"All {max_attempts} attempts failed for {func.__name__}: HTTP {result.status_code}"
                                 )
                                 return result
 
@@ -73,15 +74,16 @@ def retry(max_attempts=3, base_delay=1.0, max_delay=30.0, exceptions=(Exception,
                 except exceptions as e:
                     last_exception = e
                     if attempt < max_attempts - 1:
-                        delay = min(base_delay * (2 ** attempt), max_delay)
+                        delay = min(base_delay * (2**attempt), max_delay)
                         delay *= random.uniform(0.8, 1.2)
                         logger.warning(
-                            f"Retry {attempt + 1}/{max_attempts} for {func.__name__}: "
-                            f"{e}. Waiting {delay:.1f}s"
+                            f"Retry {attempt + 1}/{max_attempts} for {func.__name__}: {e}. Waiting {delay:.1f}s"
                         )
                         time.sleep(delay)
                     else:
                         logger.error(f"All {max_attempts} attempts failed for {func.__name__}: {e}")
             raise last_exception
+
         return wrapper
+
     return decorator

@@ -12,8 +12,8 @@ class ScrapeHistory(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'scrape_histories'
-        ordering = ['-created_at']
+        db_table = "scrape_histories"
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.platform} - {self.keyword}"
@@ -25,8 +25,8 @@ class PopularSearch(models.Model):
     last_searched = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'popular_searches'
-        ordering = ['-count', '-last_searched']
+        db_table = "popular_searches"
+        ordering = ["-count", "-last_searched"]
 
     def __str__(self):
         return f"{self.keyword} ({self.count})"

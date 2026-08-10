@@ -12,9 +12,9 @@ class NewsCacheService:
 
     def __init__(self):
         self._cache = {
-            'general': [],
-            'trending': [],
-            'last_update': None,
+            "general": [],
+            "trending": [],
+            "last_update": None,
         }
         self._lock = threading.Lock()
         self._started = False
@@ -52,12 +52,12 @@ class NewsCacheService:
         import httpx
 
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         }
 
         queries = [
-            ('general', 'berita terkini Indonesia'),
-            ('trending', 'trending Indonesia hari ini'),
+            ("general", "berita terkini Indonesia"),
+            ("trending", "trending Indonesia hari ini"),
         ]
 
         results = {}
@@ -65,30 +65,33 @@ class NewsCacheService:
         for key, query in queries:
             try:
                 from urllib.parse import urlencode
+
                 url = f"https://news.google.com/rss/search?q={urlencode({'': query})[1:]}&hl=id&gl=ID&ceid=ID:id"
 
                 response = httpx.get(url, headers=headers, timeout=15, follow_redirects=True)
                 if response.status_code != 200:
                     continue
 
-                items = re.findall(r'<item>(.*?)</item>', response.text, re.DOTALL)
+                items = re.findall(r"<item>(.*?)</item>", response.text, re.DOTALL)
                 news_list = []
 
                 for item in items[:10]:
-                    title = self._extract_tag(item, 'title')
-                    link = self._extract_tag(item, 'link')
-                    source = self._extract_tag(item, 'source')
-                    pub_date = self._extract_tag(item, 'pubDate')
+                    title = self._extract_tag(item, "title")
+                    link = self._extract_tag(item, "link")
+                    source = self._extract_tag(item, "source")
+                    pub_date = self._extract_tag(item, "pubDate")
 
                     if title and link:
                         # Decode Google News URL
                         decoded_url = self._decode_url(link)
-                        news_list.append({
-                            'title': self._clean_html(title),
-                            'url': decoded_url,
-                            'source': source or 'News',
-                            'publish_date': pub_date,
-                        })
+                        news_list.append(
+                            {
+                                "title": self._clean_html(title),
+                                "url": decoded_url,
+                                "source": source or "News",
+                                "publish_date": pub_date,
+                            }
+                        )
 
                 results[key] = news_list
 
@@ -97,35 +100,37 @@ class NewsCacheService:
 
         # Update cache atomically
         with self._lock:
-            if results.get('general'):
-                self._cache['general'] = results['general']
-            if results.get('trending'):
-                self._cache['trending'] = results['trending']
-            self._cache['last_update'] = datetime.now().isoformat()
+            if results.get("general"):
+                self._cache["general"] = results["general"]
+            if results.get("trending"):
+                self._cache["trending"] = results["trending"]
+            self._cache["last_update"] = datetime.now().isoformat()
 
     def _extract_tag(self, xml_text, tag):
-        match = re.search(rf'<{tag}(?:[^>]*)>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</{tag}>', xml_text, re.DOTALL)
-        return match.group(1).strip() if match else ''
+        match = re.search(rf"<{tag}(?:[^>]*)>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</{tag}>", xml_text, re.DOTALL)
+        return match.group(1).strip() if match else ""
 
     def _clean_html(self, text):
         if not text:
-            return ''
+            return ""
         import html as html_mod
+
         text = html_mod.unescape(text)
         text = html_mod.unescape(text)
-        text = re.sub(r'<[^>]*>', ' ', text)
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r"<[^>]*>", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
         return text
 
     def _decode_url(self, url):
         """Decode Google News URL to actual article URL."""
-        if not url or 'news.google.com' not in url:
+        if not url or "news.google.com" not in url:
             return url
         try:
             from googlenewsdecoder import new_decoderv1
+
             result = new_decoderv1(url)
-            if result.get('status') and result.get('decoded_url'):
-                return result['decoded_url']
+            if result.get("status") and result.get("decoded_url"):
+                return result["decoded_url"]
         except Exception:
             pass
         return url
@@ -133,17 +138,17 @@ class NewsCacheService:
     def get_general(self):
         """Get cached general news."""
         with self._lock:
-            return list(self._cache['general'])
+            return list(self._cache["general"])
 
     def get_trending(self):
         """Get cached trending news."""
         with self._lock:
-            return list(self._cache['trending'])
+            return list(self._cache["trending"])
 
     def get_last_update(self):
         """Get last cache update time."""
         with self._lock:
-            return self._cache['last_update']
+            return self._cache["last_update"]
 
 
 # Global singleton
